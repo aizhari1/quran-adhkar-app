@@ -1,0 +1,227 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/theme/app_colors.dart';
+
+class TasbeehState {
+  final String name;
+  final String nameArabic;
+  final int count;
+  final int target;
+
+  const TasbeehState({
+    required this.name,
+    required this.nameArabic,
+    this.count = 0,
+    this.target = 33,
+  });
+
+  TasbeehState copyWith({int? count, int? target}) {
+    return TasbeehState(
+      name: name,
+      nameArabic: nameArabic,
+      count: count ?? this.count,
+      target: target ?? this.target,
+    );
+  }
+}
+
+final tasbeehProvider = StateNotifierProvider<TasbeehNotifier, TasbeehState>((ref) {
+  return TasbeehNotifier();
+});
+
+class TasbeehNotifier extends StateNotifier<TasbeehState> {
+  TasbeehNotifier()
+      : super(const TasbeehState(
+          name: 'Subhan Allah',
+          nameArabic: 'سُبْحَانَ ٱللَّهِ',
+        ));
+
+  void increment() {
+    HapticFeedback.lightImpact();
+    state = state.copyWith(count: state.count + 1);
+  }
+
+  void reset() {
+    state = state.copyWith(count: 0);
+  }
+
+  void setDhikr(String name, String arabic, {int target = 33}) {
+    state = TasbeehState(name: name, nameArabic: arabic, target: target);
+  }
+}
+
+class TasbeehScreen extends ConsumerWidget {
+  const TasbeehScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(tasbeehProvider);
+    final notifier = ref.read(tasbeehProvider.notifier);
+    final progress = state.target > 0 ? (state.count % state.target) / state.target : 0.0;
+
+    return Scaffold(
+      backgroundColor: AppColors.warmIvory,
+      appBar: AppBar(
+        title: const Text('التسبيح'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: const Text('Reset counter?'),
+                  actions: [
+                    TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('No')),
+                    TextButton(
+                      onPressed: () {
+                        notifier.reset();
+                        Navigator.pop(ctx);
+                      },
+                      child: const Text('Yes'),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            const SizedBox(height: 24),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                children: [
+                  _DhikrChip(
+                    label: 'سبحان الله',
+                    selected: state.nameArabic.contains('سُبْحَان'),
+                    onTap: () => notifier.setDhikr('Subhan Allah', 'سُبْحَانَ ٱللَّهِ'),
+                  ),
+                  _DhikrChip(
+                    label: 'الحمد لله',
+                    selected: state.nameArabic.contains('ٱلْحَمْد'),
+                    onTap: () => notifier.setDhikr('Alhamdulillah', 'ٱلْحَمْدُ لِلَّهِ'),
+                  ),
+                  _DhikrChip(
+                    label: 'الله أكبر',
+                    selected: state.nameArabic.contains('أَكْبَر'),
+                    onTap: () => notifier.setDhikr('Allahu Akbar', 'ٱللَّهُ أَكْبَرُ'),
+                  ),
+                  _DhikrChip(
+                    label: 'أستغفر الله',
+                    selected: state.nameArabic.contains('أَسْتَغْفِر'),
+                    onTap: () => notifier.setDhikr('Astaghfirullah', 'أَسْتَغْفِرُ ٱللَّهَ', target: 100),
+                  ),
+                ],
+              ),
+            ),
+            const Spacer(),
+            Text(
+              state.nameArabic,
+              style: const TextStyle(
+                fontFamily: 'ScheherazadeNew',
+                fontSize: 32,
+                color: AppColors.deepEmerald,
+                height: 1.6,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              state.name,
+              style: const TextStyle(fontSize: 16, color: AppColors.textSecondary),
+            ),
+            const SizedBox(height: 40),
+            GestureDetector(
+              onTap: notifier.increment,
+              child: Container(
+                width: 220,
+                height: 220,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white,
+                  border: Border.all(color: AppColors.mutedGold.withOpacity(0.5), width: 3),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.deepEmerald.withOpacity(0.12),
+                      blurRadius: 24,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    SizedBox(
+                      width: 200,
+                      height: 200,
+                      child: CircularProgressIndicator(
+                        value: progress,
+                        strokeWidth: 6,
+                        backgroundColor: AppColors.borderLight,
+                        valueColor: const AlwaysStoppedAnimation(AppColors.mutedGold),
+                      ),
+                    ),
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          '${state.count}',
+                          style: const TextStyle(
+                            fontSize: 56,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.deepEmerald,
+                          ),
+                        ),
+                        Text(
+                          '/ ${state.target}',
+                          style: const TextStyle(fontSize: 16, color: AppColors.textMuted),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'Tap the circle to count',
+              style: TextStyle(color: AppColors.textMuted.withOpacity(0.8), fontSize: 13),
+            ),
+            const Spacer(flex: 2),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DhikrChip extends StatelessWidget {
+  const _DhikrChip({required this.label, required this.selected, required this.onTap});
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: FilterChip(
+        label: Text(label, style: const TextStyle(fontFamily: 'NotoNaskhArabic', fontSize: 14)),
+        selected: selected,
+        onSelected: (_) => onTap(),
+        selectedColor: AppColors.deepEmerald.withOpacity(0.15),
+        checkmarkColor: AppColors.deepEmerald,
+        backgroundColor: Colors.white,
+        side: BorderSide(
+          color: selected ? AppColors.deepEmerald : AppColors.borderLight,
+        ),
+      ),
+    );
+  }
+}

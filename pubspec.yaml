@@ -1,0 +1,135 @@
+name: quran_adhkar_app
+description: Complete offline-first Islamic Quran & Adhkar application with Mushaf, Tafsir, Khatma, Adhkar, Tasbeeh, Prayer Times, and native widgets.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.5.4
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  # State management & immutable models
+  flutter_riverpod: ^2.6.1
+  riverpod_annotation: ^2.6.1
+  freezed_annotation: ^2.4.4
+  json_annotation: ^4.9.0
+  equatable: ^2.0.5
+
+  # Navigation
+  go_router: ^14.6.2
+
+  # Local database (SQLite)
+  drift: ^2.21.0
+  sqlite3_flutter_libs: ^0.5.24
+  path_provider: ^2.1.5
+  path: ^1.9.0
+
+  # Preferences & simple key-value
+  shared_preferences: ^2.3.3
+
+  # Audio
+  just_audio: ^0.9.42
+  audio_service: ^0.18.15
+  audio_session: ^0.1.21
+
+  # Notifications
+  flutter_local_notifications: ^18.0.1
+  timezone: ^0.9.4
+  flutter_timezone: ^3.0.1
+
+  # Prayer times (offline calculation)
+  adhan: ^2.0.0+1
+
+  # Location (optional, with permission)
+  geolocator: ^13.0.2
+  permission_handler: ^11.3.1
+
+  # Network / HTTP (for optional downloads & Supabase)
+  dio: ^5.7.0
+  connectivity_plus: ^6.1.0
+
+  # Supabase (optional cloud)
+  supabase_flutter: ^2.8.0
+
+  # Firebase (optional analytics, crashlytics, FCM, remote config)
+  firebase_core: ^3.8.0
+  firebase_messaging: ^15.1.5
+  firebase_crashlytics: ^4.1.5
+  firebase_analytics: ^11.3.5
+  firebase_remote_config: ^5.1.5
+  firebase_app_check: ^0.3.1+5
+
+  # UI / UX
+  google_fonts: ^6.2.1
+  flutter_svg: ^2.0.14
+  cached_network_image: ^3.4.1
+  shimmer: ^3.0.0
+  flutter_animate: ^4.5.0
+  gap: ^3.0.1
+  intl: any
+
+  # Utilities
+  collection: ^1.18.0
+  uuid: ^4.5.1
+  url_launcher: ^6.3.1
+  share_plus: ^10.1.2
+  package_info_plus: ^8.1.1
+  device_info_plus: ^11.1.1
+  flutter_native_splash: ^2.4.3
+  flutter_launcher_icons: ^0.14.1
+
+  # Download manager helpers
+  background_downloader: ^8.5.5
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+  build_runner: ^2.4.13
+  freezed: ^2.5.7
+  json_serializable: ^6.8.0
+  riverpod_generator: ^2.6.2
+  drift_dev: ^2.21.0
+  mockito: ^5.4.4
+  integration_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true
+  generate: true
+
+  assets:
+    - assets/quran/
+    - assets/adhkar/
+    - assets/images/
+    - assets/fonts/
+
+  fonts:
+    - family: Amiri
+      fonts:
+        - asset: assets/fonts/Amiri-Regular.ttf
+        - asset: assets/fonts/Amiri-Bold.ttf
+          weight: 700
+    - family: ScheherazadeNew
+      fonts:
+        - asset: assets/fonts/ScheherazadeNew-Regular.ttf
+        - asset: assets/fonts/ScheherazadeNew-Bold.ttf
+          weight: 700
+    - family: NotoNaskhArabic
+      fonts:
+        - asset: assets/fonts/NotoNaskhArabic-Regular.ttf
+        - asset: assets/fonts/NotoNaskhArabic-Bold.ttf
+          weight: 700
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter-Regular.ttf
+        - asset: assets/fonts/Inter-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Inter-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Inter-Bold.ttf
+          weight: 700

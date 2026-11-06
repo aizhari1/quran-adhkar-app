@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:adhan/adhan.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:intl/intl.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../settings/presentation/settings_screen.dart';
 
-/// Offline prayer times using the adhan package.
-/// Default coordinates: Cairo (user can change later via settings/GPS).
 class PrayerTimesState {
   final Coordinates coordinates;
   final CalculationMethod method;
@@ -13,14 +13,18 @@ class PrayerTimesState {
   final DateTime date;
   final PrayerTimes? times;
   final String cityName;
+  final bool isLoadingLocation;
+  final String? locationError;
 
   const PrayerTimesState({
-    this.coordinates = const Coordinates(30.0444, 31.2357), // Cairo
+    this.coordinates = const Coordinates(30.0444, 31.2357),
     this.method = CalculationMethod.egyptian,
     this.madhab = Madhab.shafi,
     required this.date,
     this.times,
     this.cityName = 'Cairo',
+    this.isLoadingLocation = false,
+    this.locationError,
   });
 
   PrayerTimesState copyWith({
@@ -30,6 +34,9 @@ class PrayerTimesState {
     DateTime? date,
     PrayerTimes? times,
     String? cityName,
+    bool? isLoadingLocation,
+    String? locationError,
+    bool clearError = false,
   }) {
     return PrayerTimesState(
       coordinates: coordinates ?? this.coordinates,
@@ -38,13 +45,41 @@ class PrayerTimesState {
       date: date ?? this.date,
       times: times ?? this.times,
       cityName: cityName ?? this.cityName,
+      isLoadingLocation: isLoadingLocation ?? this.isLoadingLocation,
+      locationError: clearError ? null : (locationError ?? this.locationError),
     );
   }
 }
 
 class PrayerTimesNotifier extends StateNotifier<PrayerTimesState> {
-  PrayerTimesNotifier() : super(PrayerTimesState(date: DateTime.now())) {
+  PrayerTimesNotifier(this._settings)
+      : super(PrayerTimesState(date: DateTime.now())) {
+    _applySettings();
     _calculate();
+  }
+
+  final AppSettingsState _settings;
+
+  void _applySettings() {
+    final method = _mapMethod(_settings.calculationMethod);
+    final madhab =
+        _settings.asrMethod == 'hanafi' ? Madhab.hanafi : Madhab.shafi;
+    state = state.copyWith(method: method, madhab: madhab);
+  }
+
+  CalculationMethod _mapMethod(String key) {
+    switch (key) {
+      case 'muslim_world_league':
+        return CalculationMethod.muslim_world_league;
+      case 'karachi':
+        return CalculationMethod.karachi;
+      case 'umm_al_qura':
+        return CalculationMethod.umm_al_qura;
+      case 'north_america':
+        return CalculationMethod.north_america;
+      default:
+        return CalculationMethod.egyptian;
+    }
   }
 
   void _calculate() {
@@ -63,28 +98,78 @@ class PrayerTimesNotifier extends StateNotifier<PrayerTimesState> {
     _calculate();
   }
 
-  void setMethod(CalculationMethod method) {
-    state = state.copyWith(method: method);
-    _calculate();
-  }
-
-  void setMadhab(Madhab madhab) {
-    state = state.copyWith(madhab: madhab);
-    _calculate();
-  }
-
   void setLocation(double lat, double lng, String city) {
     state = state.copyWith(
       coordinates: Coordinates(lat, lng),
       cityName: city,
+      clearError: true,
     );
+    _calculate();
+  }
+
+  Future<void> useCurrentLocation() async {
+    state = state.copyWith(isLoadingLocation: true, clearError: true);
+    try {
+      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        state = state.copyWith(
+          isLoadingLocation: false,
+          locationError: 'خدمة الموقع غير مفعّلة',
+        );
+        return;
+      }
+
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        state = state.copyWith(
+          isLoadingLocation: false,
+          locationError: 'لم يتم منح إذن الموقع',
+        );
+        return;
+      }
+
+      final pos = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.medium,
+        ),
+      );
+      state = state.copyWith(
+        coordinates: Coordinates(pos.latitude, pos.longitude),
+        cityName:
+            '${pos.latitude.toStringAsFixed(2)}, ${pos.longitude.toStringAsFixed(2)}',
+        isLoadingLocation: false,
+        clearError: true,
+      );
+      _calculate();
+    } catch (e) {
+      state = state.copyWith(
+        isLoadingLocation: false,
+        locationError: 'تعذر الحصول على الموقع',
+      );
+    }
+  }
+
+  void syncFromSettings(AppSettingsState settings) {
+    final method = _mapMethod(settings.calculationMethod);
+    final madhab =
+        settings.asrMethod == 'hanafi' ? Madhab.hanafi : Madhab.shafi;
+    state = state.copyWith(method: method, madhab: madhab);
     _calculate();
   }
 }
 
 final prayerTimesProvider =
     StateNotifierProvider<PrayerTimesNotifier, PrayerTimesState>((ref) {
-  return PrayerTimesNotifier();
+  final settings = ref.watch(appSettingsProvider);
+  final notifier = PrayerTimesNotifier(settings);
+  ref.listen<AppSettingsState>(appSettingsProvider, (_, next) {
+    notifier.syncFromSettings(next);
+  });
+  return notifier;
 });
 
 class PrayerTimesScreen extends ConsumerWidget {
@@ -93,6 +178,7 @@ class PrayerTimesScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(prayerTimesProvider);
+    final notifier = ref.read(prayerTimesProvider.notifier);
     final times = state.times;
     final now = DateTime.now();
 
@@ -118,7 +204,6 @@ class PrayerTimesScreen extends ConsumerWidget {
         break;
       }
     }
-    nextPrayer ??= prayers.first;
 
     final timeFormat = DateFormat.jm();
 
@@ -127,166 +212,152 @@ class PrayerTimesScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('مواقيت الصلاة'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.calendar_today_outlined),
-            onPressed: () async {
-              final picked = await showDatePicker(
-                context: context,
-                initialDate: state.date,
-                firstDate: DateTime(2020),
-                lastDate: DateTime(2030),
-              );
-              if (picked != null) {
-                ref.read(prayerTimesProvider.notifier).setDate(picked);
-              }
-            },
-          ),
+          if (state.isLoadingLocation)
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            )
+          else
+            IconButton(
+              icon: const Icon(Icons.my_location),
+              tooltip: 'استخدم موقعي',
+              onPressed: () => notifier.useCurrentLocation(),
+            ),
         ],
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.deepEmerald,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    const Icon(Icons.location_on, color: AppColors.mutedGold),
-                    const SizedBox(width: 8),
-                    Text(
-                      state.cityName,
-                      style: const TextStyle(
-                        color: AppColors.warmIvory,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
+          Card(
+            color: AppColors.deepEmerald,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.location_on, color: AppColors.mutedGold),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          state.cityName,
+                          style: const TextStyle(
+                            color: AppColors.warmIvory,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 16,
+                          ),
+                        ),
                       ),
-                    ),
-                    const Spacer(),
-                    Text(
-                      DateFormat.yMMMd().format(state.date),
-                      style: TextStyle(
-                        color: AppColors.warmIvory.withOpacity(0.8),
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                if (nextPrayer != null) ...[
-                  Text(
-                    'Next: ${nextPrayer.nameArabic}',
-                    style: const TextStyle(
-                      color: AppColors.mutedGold,
-                      fontSize: 14,
-                    ),
+                    ],
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    timeFormat.format(nextPrayer.time),
-                    style: const TextStyle(
-                      color: AppColors.warmIvory,
-                      fontSize: 36,
-                      fontWeight: FontWeight.w700,
+                    DateFormat.yMMMEd().format(state.date),
+                    style: TextStyle(
+                      color: AppColors.warmIvory.withOpacity(0.8),
+                      fontSize: 13,
                     ),
                   ),
+                  if (state.locationError != null) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      state.locationError!,
+                      style: const TextStyle(
+                          color: Colors.orangeAccent, fontSize: 12),
+                    ),
+                  ],
+                  const SizedBox(height: 12),
+                  OutlinedButton.icon(
+                    onPressed: state.isLoadingLocation
+                        ? null
+                        : () => notifier.useCurrentLocation(),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.mutedGold,
+                      side: const BorderSide(color: AppColors.mutedGold),
+                    ),
+                    icon: const Icon(Icons.gps_fixed, size: 18),
+                    label: const Text('تحديد موقعي الحالي'),
+                  ),
                 ],
-              ],
+              ),
             ),
           ),
-          const SizedBox(height: 16),
-          ...prayers.map((p) {
-            final isNext = nextPrayer?.name == p.name;
-            final isPassed = p.time.isBefore(now);
-            return Container(
-              margin: const EdgeInsets.only(bottom: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              decoration: BoxDecoration(
-                color: isNext
-                    ? AppColors.mutedGold.withOpacity(0.12)
-                    : Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: isNext
-                      ? AppColors.mutedGold
-                      : AppColors.borderLight,
-                  width: isNext ? 1.5 : 1,
+          if (nextPrayer != null) ...[
+            const SizedBox(height: 12),
+            Card(
+              child: ListTile(
+                leading:
+                    const Icon(Icons.access_time, color: AppColors.mutedGold),
+                title: Text('التالي: ${nextPrayer.nameAr}'),
+                subtitle: Text(timeFormat.format(nextPrayer.time)),
+                trailing: Text(
+                  _countdown(nextPrayer.time, now),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.deepEmerald,
+                  ),
                 ),
               ),
-              child: Row(
-                children: [
-                  if (isNext)
-                    Container(
-                      width: 8,
-                      height: 8,
-                      margin: const EdgeInsets.only(right: 12),
-                      decoration: const BoxDecoration(
-                        color: AppColors.mutedGold,
-                        shape: BoxShape.circle,
-                      ),
-                    )
-                  else
-                    const SizedBox(width: 20),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          p.name,
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 15,
-                            color: isPassed && !isNext
-                                ? AppColors.textMuted
-                                : AppColors.textPrimary,
-                          ),
-                        ),
-                        Text(
-                          p.nameArabic,
-                          style: TextStyle(
-                            fontFamily: 'NotoNaskhArabic',
-                            fontSize: 13,
-                            color: AppColors.textMuted,
-                          ),
-                        ),
-                      ],
-                    ),
+            ),
+          ],
+          const SizedBox(height: 12),
+          ...prayers.map((p) {
+            final isNext = nextPrayer?.name == p.name;
+            return Card(
+              margin: const EdgeInsets.only(bottom: 8),
+              color: isNext
+                  ? AppColors.deepEmerald.withOpacity(0.08)
+                  : Colors.white,
+              child: ListTile(
+                title: Text(
+                  p.nameAr,
+                  style: TextStyle(
+                    fontWeight: isNext ? FontWeight.w700 : FontWeight.w500,
+                    color: AppColors.deepEmerald,
                   ),
-                  Text(
-                    timeFormat.format(p.time),
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: isNext
-                          ? AppColors.deepEmerald
-                          : (isPassed
-                              ? AppColors.textMuted
-                              : AppColors.textPrimary),
-                    ),
+                ),
+                subtitle: Text(p.name),
+                trailing: Text(
+                  timeFormat.format(p.time),
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color:
+                        isNext ? AppColors.mutedGold : AppColors.textPrimary,
                   ),
-                ],
+                ),
               ),
             );
           }),
-          const SizedBox(height: 16),
-          Text(
-            'Method: ${state.method.name} • Madhab: ${state.madhab.name}',
-            style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+          const SizedBox(height: 8),
+          const Text(
+            'طريقة الحساب والإعدادات من شاشة الإعدادات',
             textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 12, color: AppColors.textMuted),
           ),
         ],
       ),
     );
   }
+
+  String _countdown(DateTime target, DateTime now) {
+    final d = target.difference(now);
+    if (d.isNegative) return '';
+    final h = d.inHours;
+    final m = d.inMinutes % 60;
+    if (h > 0) return '${h}س ${m}د';
+    return '${m}د';
+  }
 }
 
 class _PrayerInfo {
   final String name;
-  final String nameArabic;
+  final String nameAr;
   final DateTime time;
-  const _PrayerInfo(this.name, this.nameArabic, this.time);
+  const _PrayerInfo(this.name, this.nameAr, this.time);
 }

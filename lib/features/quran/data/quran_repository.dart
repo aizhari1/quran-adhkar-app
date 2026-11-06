@@ -1,8 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'surah_metadata.dart';
 
-/// Abstract repository for Quran data.
-/// Implementations: local Drift, asset import, etc.
 abstract class QuranRepository {
   Future<List<SurahMeta>> getAllSurahs();
   Future<SurahMeta?> getSurah(int number);
@@ -32,8 +30,6 @@ class AyahData {
   });
 }
 
-/// Temporary in-memory implementation using metadata only.
-/// Real verse text will come after Tanzil import into Drift.
 class LocalQuranRepository implements QuranRepository {
   @override
   Future<List<SurahMeta>> getAllSurahs() async => allSurahs;
@@ -48,19 +44,13 @@ class LocalQuranRepository implements QuranRepository {
   }
 
   @override
-  Future<List<AyahData>> getAyahsForSurah(int surahNumber) async {
-    return [];
-  }
+  Future<List<AyahData>> getAyahsForSurah(int surahNumber) async => [];
 
   @override
-  Future<List<AyahData>> getAyahsForPage(int pageNumber) async {
-    return [];
-  }
+  Future<List<AyahData>> getAyahsForPage(int pageNumber) async => [];
 
   @override
-  Future<void> importFromAssetIfNeeded() async {
-    // TODO: parse assets/quran/quran-uthmani.json and insert into Drift
-  }
+  Future<void> importFromAssetIfNeeded() async {}
 
   @override
   Future<bool> isDataImported() async => false;

@@ -1,22 +1,26 @@
 # Local Persistence
 
-## Current (works offline without codegen)
+## Active offline storage (SharedPreferences)
 
-| Data | Storage | Status |
-|------|---------|--------|
-| App settings (lang, theme, font, prayer method, notifications) | SharedPreferences | **Active** – survives app restart |
-| Tasbeeh counts | In-memory (+ Drift repo ready) | After build_runner |
-| Adhkar progress | In-memory | After build_runner |
-| Khatma plans | In-memory (+ Drift repo ready) | After build_runner |
-| Reading position | Drift schema ready | After Quran import + codegen |
+| Data | Survives restart |
+|------|------------------|
+| App settings (lang, theme, font, prayer method, notifications) | Yes |
+| Tasbeeh current counter (name + count + target) | Yes |
+| Adhkar progress (counts + completed ids) | Yes |
+| Khatma plans (all fields) | Yes |
 
-## After `dart run build_runner build`
+## Drift (SQLite) – after `build_runner`
 
-1. Drift generates `app_database.g.dart`.
-2. Use `SettingsRepository`, `TasbeehRepository`, `KhatmaRepository` for SQLite.
-3. Optional: migrate SharedPreferences settings into Drift `UserSettings`.
+Schema is ready in `lib/core/database/app_database.dart`.
+Repository stubs exist for Settings / Tasbeeh / Khatma.
 
-## SharedPreferences keys
+```bash
+dart run build_runner build --delete-conflicting-outputs
+```
 
-- `settings_lang`, `settings_theme`, `settings_font`, `settings_calc`, `settings_asr`
-- `settings_notif`, `settings_morning`, `settings_evening`, `settings_widget`
+## Keys
+
+- Settings: `settings_*`
+- Tasbeeh: `tasbeeh_current`
+- Adhkar: `adhkar_counts`, `adhkar_completed`
+- Khatma: `khatma_plans`

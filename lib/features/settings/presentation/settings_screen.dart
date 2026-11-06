@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
+import '../data/settings_prefs.dart';
 
 class AppSettingsState {
   final String languageCode;
@@ -51,22 +52,67 @@ class AppSettingsState {
 }
 
 class AppSettingsNotifier extends StateNotifier<AppSettingsState> {
-  AppSettingsNotifier() : super(const AppSettingsState());
+  AppSettingsNotifier(this._prefs) : super(const AppSettingsState()) {
+    _load();
+  }
 
-  void setLanguage(String code) => state = state.copyWith(languageCode: code);
-  void setThemeMode(ThemeMode mode) => state = state.copyWith(themeMode: mode);
-  void setFontSize(double size) => state = state.copyWith(quranFontSize: size.clamp(16, 40));
-  void setCalculationMethod(String method) => state = state.copyWith(calculationMethod: method);
-  void setAsrMethod(String method) => state = state.copyWith(asrMethod: method);
-  void setNotifications(bool v) => state = state.copyWith(notificationsEnabled: v);
-  void setMorningAdhkar(bool v) => state = state.copyWith(morningAdhkarEnabled: v);
-  void setEveningAdhkar(bool v) => state = state.copyWith(eveningAdhkarEnabled: v);
-  void setWidgetAutoProgress(bool v) => state = state.copyWith(widgetAutoProgress: v);
+  final SettingsPrefs _prefs;
+
+  Future<void> _load() async {
+    state = await _prefs.load();
+  }
+
+  Future<void> _persist() => _prefs.save(state);
+
+  void setLanguage(String code) {
+    state = state.copyWith(languageCode: code);
+    _persist();
+  }
+
+  void setThemeMode(ThemeMode mode) {
+    state = state.copyWith(themeMode: mode);
+    _persist();
+  }
+
+  void setFontSize(double size) {
+    state = state.copyWith(quranFontSize: size.clamp(16, 40));
+    _persist();
+  }
+
+  void setCalculationMethod(String method) {
+    state = state.copyWith(calculationMethod: method);
+    _persist();
+  }
+
+  void setAsrMethod(String method) {
+    state = state.copyWith(asrMethod: method);
+    _persist();
+  }
+
+  void setNotifications(bool v) {
+    state = state.copyWith(notificationsEnabled: v);
+    _persist();
+  }
+
+  void setMorningAdhkar(bool v) {
+    state = state.copyWith(morningAdhkarEnabled: v);
+    _persist();
+  }
+
+  void setEveningAdhkar(bool v) {
+    state = state.copyWith(eveningAdhkarEnabled: v);
+    _persist();
+  }
+
+  void setWidgetAutoProgress(bool v) {
+    state = state.copyWith(widgetAutoProgress: v);
+    _persist();
+  }
 }
 
 final appSettingsProvider =
     StateNotifierProvider<AppSettingsNotifier, AppSettingsState>((ref) {
-  return AppSettingsNotifier();
+  return AppSettingsNotifier(ref.watch(settingsPrefsProvider));
 });
 
 class SettingsScreen extends ConsumerWidget {
@@ -156,7 +202,7 @@ class SettingsScreen extends ConsumerWidget {
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 16),
             child: Text(
-              'الإعدادات حالياً في الذاكرة. سيتم حفظها في Drift لاحقاً.',
+              'الإعدادات تُحفظ محلياً وتبقى بعد إغلاق التطبيق.',
               style: TextStyle(fontSize: 12, color: AppColors.textMuted),
               textAlign: TextAlign.center,
             ),

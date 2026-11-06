@@ -35,7 +35,7 @@ class AppTheme {
         systemOverlayStyle: SystemUiOverlayStyle.dark,
         titleTextStyle: AppTypography.titleLarge,
       ),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: Colors.white,
         elevation: 0,
         shape: RoundedRectangleBorder(
@@ -53,7 +53,6 @@ class AppTheme {
             borderRadius: BorderRadius.circular(8),
           ),
           elevation: 0,
-          textStyle: AppTypography.labelLarge.copyWith(color: AppColors.warmIvory),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
@@ -81,7 +80,8 @@ class AppTheme {
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: AppColors.mutedGold, width: 1.5),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       ),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
         backgroundColor: Colors.white,
@@ -89,17 +89,6 @@ class AppTheme {
         unselectedItemColor: AppColors.textMuted,
         type: BottomNavigationBarType.fixed,
         elevation: 8,
-      ),
-      dividerTheme: const DividerThemeData(
-        color: AppColors.divider,
-        thickness: 1,
-        space: 1,
-      ),
-      chipTheme: ChipThemeData(
-        backgroundColor: AppColors.parchment,
-        selectedColor: AppColors.deepEmerald.withOpacity(0.12),
-        labelStyle: AppTypography.labelLarge,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
     );
   }
@@ -131,9 +120,10 @@ class AppTheme {
         elevation: 0,
         centerTitle: true,
         systemOverlayStyle: SystemUiOverlayStyle.light,
-        titleTextStyle: AppTypography.titleLarge.copyWith(color: AppColors.textOnDark),
+        titleTextStyle:
+            AppTypography.titleLarge.copyWith(color: AppColors.textOnDark),
       ),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: AppColors.cardDark,
         elevation: 0,
         shape: RoundedRectangleBorder(

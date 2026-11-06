@@ -16,37 +16,26 @@ jobs:
     name: Build APK
     runs-on: ubuntu-22.04
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Java
-        uses: actions/setup-java@v4
+      - uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: '17'
+          distribution: temurin
+          java-version: "17"
 
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
+      - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.24.5'
-          channel: 'stable'
+          flutter-version: "3.24.5"
+          channel: stable
           cache: true
 
       - name: Pub get
-        run: flutter pub get
-
-      - name: Flutter doctor
-        run: flutter doctor -v
-
-      - name: Analyze (non-blocking)
-        continue-on-error: true
-        run: flutter analyze --no-fatal-infos 2>&1 | tee analyze.log
+        run: flutter pub get 2>&1 | tee pubget.log
 
       - name: Build release APK
         run: |
           set -o pipefail
-          flutter build apk --release --no-tree-shake-icons --verbose 2>&1 | tee build.log
-          tail -n 100 build.log
+          flutter build apk --release --no-tree-shake-icons 2>&1 | tee build.log
 
       - name: Upload APK
         if: success()
@@ -54,15 +43,14 @@ jobs:
         with:
           name: quran-adhkar-apk
           path: build/app/outputs/flutter-apk/app-release.apk
-          if-no-files-found: warn
           retention-days: 14
 
-      - name: Upload build log on failure
+      - name: Upload logs on failure
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: build-logs
           path: |
+            pubget.log
             build.log
-            analyze.log
           if-no-files-found: ignore

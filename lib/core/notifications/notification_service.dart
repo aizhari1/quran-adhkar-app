@@ -5,7 +5,6 @@ import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:flutter_timezone/flutter_timezone.dart';
 
-/// Local notifications for morning/evening Adhkar (not FCM).
 class NotificationService {
   NotificationService();
 
@@ -28,7 +27,7 @@ class NotificationService {
       tz.setLocalLocation(tz.UTC);
     }
 
-    const android = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const android = AndroidInitializationSettings('@android:drawable/ic_dialog_info');
     const ios = DarwinInitializationSettings(
       requestAlertPermission: true,
       requestBadgePermission: true,
@@ -108,7 +107,7 @@ class NotificationService {
         title,
         body,
         scheduled,
-        NotificationDetails(
+        const NotificationDetails(
           android: AndroidNotificationDetails(
             'adhkar_channel',
             'أذكار',
@@ -116,7 +115,7 @@ class NotificationService {
             importance: Importance.high,
             priority: Priority.high,
           ),
-          iOS: const DarwinNotificationDetails(),
+          iOS: DarwinNotificationDetails(),
         ),
         androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
         uiLocalNotificationDateInterpretation:

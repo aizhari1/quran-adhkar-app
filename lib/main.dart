@@ -5,16 +5,9 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'core/theme/app_theme.dart';
 import 'core/routing/app_router.dart';
-import 'core/database/app_database.dart';
 import 'core/notifications/notification_service.dart';
 import 'features/settings/presentation/settings_screen.dart';
 import 'features/widgets/verse_widget_service.dart';
-
-final databaseProvider = Provider<AppDatabase>((ref) {
-  final db = AppDatabase();
-  ref.onDispose(() => db.close());
-  return db;
-});
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

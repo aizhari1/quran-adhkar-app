@@ -6,8 +6,8 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'core/theme/app_theme.dart';
 import 'core/routing/app_router.dart';
 import 'core/database/app_database.dart';
+import 'features/settings/presentation/settings_screen.dart';
 
-/// Global database instance provider
 final databaseProvider = Provider<AppDatabase>((ref) {
   final db = AppDatabase();
   ref.onDispose(() => db.close());
@@ -17,7 +17,6 @@ final databaseProvider = Provider<AppDatabase>((ref) {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Prefer edge-to-edge on Android
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
     statusBarColor: Colors.transparent,
   ));
@@ -35,13 +34,15 @@ class QuranAdhkarApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(goRouterProvider);
+    final settings = ref.watch(appSettingsProvider);
 
     return MaterialApp.router(
       title: 'Quran & Adhkar',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
-      themeMode: ThemeMode.system,
+      themeMode: settings.themeMode,
+      locale: Locale(settings.languageCode),
       routerConfig: router,
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
@@ -58,7 +59,6 @@ class QuranAdhkarApp extends ConsumerWidget {
         Locale('bn'),
         Locale('ms'),
       ],
-      // RTL is handled automatically by Flutter based on locale
     );
   }
 }

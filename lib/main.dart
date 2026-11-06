@@ -6,6 +6,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'core/theme/app_theme.dart';
 import 'core/routing/app_router.dart';
 import 'core/database/app_database.dart';
+import 'core/notifications/notification_service.dart';
 import 'features/settings/presentation/settings_screen.dart';
 import 'features/widgets/verse_widget_service.dart';
 
@@ -26,6 +27,10 @@ void main() async {
     final widgetService = VerseWidgetService();
     await widgetService.init();
     await widgetService.showFallback();
+  } catch (_) {}
+
+  try {
+    await NotificationService().init();
   } catch (_) {}
 
   runApp(

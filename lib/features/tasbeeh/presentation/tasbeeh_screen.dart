@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
+import '../data/tasbeeh_prefs.dart';
 
 class TasbeehState {
   final String name;
@@ -27,27 +28,55 @@ class TasbeehState {
 }
 
 final tasbeehProvider = StateNotifierProvider<TasbeehNotifier, TasbeehState>((ref) {
-  return TasbeehNotifier();
+  return TasbeehNotifier(ref.watch(tasbeehPrefsProvider));
 });
 
 class TasbeehNotifier extends StateNotifier<TasbeehState> {
-  TasbeehNotifier()
+  TasbeehNotifier(this._prefs)
       : super(const TasbeehState(
           name: 'Subhan Allah',
           nameArabic: 'سُبْحَانَ ٱللَّهِ',
-        ));
+        )) {
+    _load();
+  }
+
+  final TasbeehPrefs _prefs;
+
+  Future<void> _load() async {
+    final s = await _prefs.load();
+    if (s != null) {
+      state = TasbeehState(
+        name: s.name,
+        nameArabic: s.nameArabic,
+        count: s.count,
+        target: s.target,
+      );
+    }
+  }
+
+  Future<void> _persist() async {
+    await _prefs.save(TasbeehSnapshot(
+      name: state.name,
+      nameArabic: state.nameArabic,
+      count: state.count,
+      target: state.target,
+    ));
+  }
 
   void increment() {
     HapticFeedback.lightImpact();
     state = state.copyWith(count: state.count + 1);
+    _persist();
   }
 
   void reset() {
     state = state.copyWith(count: 0);
+    _persist();
   }
 
   void setDhikr(String name, String arabic, {int target = 33}) {
     state = TasbeehState(name: name, nameArabic: arabic, target: target);
+    _persist();
   }
 }
 

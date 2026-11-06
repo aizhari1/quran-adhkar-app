@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/notifications/notification_service.dart';
 import '../data/settings_prefs.dart';
 
 class AppSettingsState {
@@ -52,17 +53,31 @@ class AppSettingsState {
 }
 
 class AppSettingsNotifier extends StateNotifier<AppSettingsState> {
-  AppSettingsNotifier(this._prefs) : super(const AppSettingsState()) {
+  AppSettingsNotifier(this._prefs, this._notifications)
+      : super(const AppSettingsState()) {
     _load();
   }
 
   final SettingsPrefs _prefs;
+  final NotificationService _notifications;
 
   Future<void> _load() async {
     state = await _prefs.load();
+    await _syncNotifications();
   }
 
   Future<void> _persist() => _prefs.save(state);
+
+  Future<void> _syncNotifications() async {
+    if (!state.notificationsEnabled) {
+      await _notifications.cancelAdhkar();
+      return;
+    }
+    await _notifications.scheduleDailyAdhkar(
+      morningEnabled: state.morningAdhkarEnabled,
+      eveningEnabled: state.eveningAdhkarEnabled,
+    );
+  }
 
   void setLanguage(String code) {
     state = state.copyWith(languageCode: code);
@@ -92,16 +107,19 @@ class AppSettingsNotifier extends StateNotifier<AppSettingsState> {
   void setNotifications(bool v) {
     state = state.copyWith(notificationsEnabled: v);
     _persist();
+    _syncNotifications();
   }
 
   void setMorningAdhkar(bool v) {
     state = state.copyWith(morningAdhkarEnabled: v);
     _persist();
+    _syncNotifications();
   }
 
   void setEveningAdhkar(bool v) {
     state = state.copyWith(eveningAdhkarEnabled: v);
     _persist();
+    _syncNotifications();
   }
 
   void setWidgetAutoProgress(bool v) {
@@ -112,7 +130,10 @@ class AppSettingsNotifier extends StateNotifier<AppSettingsState> {
 
 final appSettingsProvider =
     StateNotifierProvider<AppSettingsNotifier, AppSettingsState>((ref) {
-  return AppSettingsNotifier(ref.watch(settingsPrefsProvider));
+  return AppSettingsNotifier(
+    ref.watch(settingsPrefsProvider),
+    ref.watch(notificationServiceProvider),
+  );
 });
 
 class SettingsScreen extends ConsumerWidget {
@@ -192,11 +213,27 @@ class SettingsScreen extends ConsumerWidget {
           ),
           const Divider(),
           _SectionHeader('حول'),
-          const ListTile(title: Text('سياسة الخصوصية'), trailing: Icon(Icons.chevron_right)),
+          const ListTile(
+            title: Text('سياسة الخصوصية'),
+            trailing: Icon(Icons.chevron_right),
+          ),
           const ListTile(
             title: Text('حول التطبيق'),
             subtitle: Text('Quran & Adhkar v1.0.0'),
             trailing: Icon(Icons.chevron_right),
+          ),
+          ListTile(
+            title: const Text('اختبار الإشعار'),
+            subtitle: const Text('إرسال إشعار تجريبي الآن'),
+            trailing: const Icon(Icons.notifications_active_outlined),
+            onTap: () async {
+              await ref.read(notificationServiceProvider).showTestNotification();
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('تم إرسال إشعار تجريبي')),
+                );
+              }
+            },
           ),
           const SizedBox(height: 24),
           const Padding(
@@ -215,17 +252,26 @@ class SettingsScreen extends ConsumerWidget {
 
   String _langLabel(String code) {
     const map = {
-      'ar': 'العربية', 'en': 'English', 'fr': 'Français', 'tr': 'Türkçe',
-      'id': 'Indonesia', 'ur': 'اردو', 'bn': 'বাংলা', 'ms': 'Melayu',
+      'ar': 'العربية',
+      'en': 'English',
+      'fr': 'Français',
+      'tr': 'Türkçe',
+      'id': 'Indonesia',
+      'ur': 'اردو',
+      'bn': 'বাংলা',
+      'ms': 'Melayu',
     };
     return map[code] ?? code;
   }
 
   String _themeLabel(ThemeMode m) {
     switch (m) {
-      case ThemeMode.light: return 'فاتح';
-      case ThemeMode.dark: return 'داكن';
-      case ThemeMode.system: return 'حسب النظام';
+      case ThemeMode.light:
+        return 'فاتح';
+      case ThemeMode.dark:
+        return 'داكن';
+      case ThemeMode.system:
+        return 'حسب النظام';
     }
   }
 
@@ -240,15 +286,23 @@ class SettingsScreen extends ConsumerWidget {
     return map[m] ?? m;
   }
 
-  void _pickLanguage(BuildContext context, AppSettingsNotifier n, String current) {
+  void _pickLanguage(
+      BuildContext context, AppSettingsNotifier n, String current) {
     final options = {
-      'ar': 'العربية', 'en': 'English', 'fr': 'Français', 'tr': 'Türkçe',
-      'id': 'Indonesia', 'ur': 'اردو', 'bn': 'বাংলা', 'ms': 'Melayu',
+      'ar': 'العربية',
+      'en': 'English',
+      'fr': 'Français',
+      'tr': 'Türkçe',
+      'id': 'Indonesia',
+      'ur': 'اردو',
+      'bn': 'বাংলা',
+      'ms': 'Melayu',
     };
     _showPicker(context, 'اللغة', options, current, n.setLanguage);
   }
 
-  void _pickTheme(BuildContext context, AppSettingsNotifier n, ThemeMode current) {
+  void _pickTheme(
+      BuildContext context, AppSettingsNotifier n, ThemeMode current) {
     showModalBottomSheet(
       context: context,
       builder: (ctx) => SafeArea(
@@ -257,18 +311,33 @@ class SettingsScreen extends ConsumerWidget {
           children: [
             ListTile(
               title: const Text('فاتح'),
-              trailing: current == ThemeMode.light ? const Icon(Icons.check, color: AppColors.deepEmerald) : null,
-              onTap: () { n.setThemeMode(ThemeMode.light); Navigator.pop(ctx); },
+              trailing: current == ThemeMode.light
+                  ? const Icon(Icons.check, color: AppColors.deepEmerald)
+                  : null,
+              onTap: () {
+                n.setThemeMode(ThemeMode.light);
+                Navigator.pop(ctx);
+              },
             ),
             ListTile(
               title: const Text('داكن'),
-              trailing: current == ThemeMode.dark ? const Icon(Icons.check, color: AppColors.deepEmerald) : null,
-              onTap: () { n.setThemeMode(ThemeMode.dark); Navigator.pop(ctx); },
+              trailing: current == ThemeMode.dark
+                  ? const Icon(Icons.check, color: AppColors.deepEmerald)
+                  : null,
+              onTap: () {
+                n.setThemeMode(ThemeMode.dark);
+                Navigator.pop(ctx);
+              },
             ),
             ListTile(
               title: const Text('حسب النظام'),
-              trailing: current == ThemeMode.system ? const Icon(Icons.check, color: AppColors.deepEmerald) : null,
-              onTap: () { n.setThemeMode(ThemeMode.system); Navigator.pop(ctx); },
+              trailing: current == ThemeMode.system
+                  ? const Icon(Icons.check, color: AppColors.deepEmerald)
+                  : null,
+              onTap: () {
+                n.setThemeMode(ThemeMode.system);
+                Navigator.pop(ctx);
+              },
             ),
           ],
         ),
@@ -276,7 +345,8 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  void _pickMethod(BuildContext context, AppSettingsNotifier n, String current) {
+  void _pickMethod(
+      BuildContext context, AppSettingsNotifier n, String current) {
     final options = {
       'egyptian': 'الهيئة المصرية',
       'muslim_world_league': 'رابطة العالم الإسلامي',
@@ -288,13 +358,25 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   void _pickAsr(BuildContext context, AppSettingsNotifier n, String current) {
-    _showPicker(context, 'مذهب العصر', {
-      'shafi': 'شافعي / مالكي / حنبلي',
-      'hanafi': 'حنفي',
-    }, current, n.setAsrMethod);
+    _showPicker(
+      context,
+      'مذهب العصر',
+      {
+        'shafi': 'شافعي / مالكي / حنبلي',
+        'hanafi': 'حنفي',
+      },
+      current,
+      n.setAsrMethod,
+    );
   }
 
-  void _showPicker(BuildContext context, String title, Map<String, String> options, String current, void Function(String) onSelect) {
+  void _showPicker(
+    BuildContext context,
+    String title,
+    Map<String, String> options,
+    String current,
+    void Function(String) onSelect,
+  ) {
     showModalBottomSheet(
       context: context,
       builder: (ctx) => SafeArea(
@@ -303,13 +385,23 @@ class SettingsScreen extends ConsumerWidget {
           children: [
             Padding(
               padding: const EdgeInsets.all(16),
-              child: Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
+              child: Text(
+                title,
+                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+              ),
             ),
-            ...options.entries.map((e) => ListTile(
-                  title: Text(e.value),
-                  trailing: e.key == current ? const Icon(Icons.check, color: AppColors.deepEmerald) : null,
-                  onTap: () { onSelect(e.key); Navigator.pop(ctx); },
-                )),
+            ...options.entries.map(
+              (e) => ListTile(
+                title: Text(e.value),
+                trailing: e.key == current
+                    ? const Icon(Icons.check, color: AppColors.deepEmerald)
+                    : null,
+                onTap: () {
+                  onSelect(e.key);
+                  Navigator.pop(ctx);
+                },
+              ),
+            ),
           ],
         ),
       ),
@@ -325,13 +417,24 @@ class _SectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-      child: Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.mutedGreen)),
+      child: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+          color: AppColors.mutedGreen,
+        ),
+      ),
     );
   }
 }
 
 class _SettingsTile extends StatelessWidget {
-  const _SettingsTile({required this.title, required this.subtitle, required this.onTap});
+  const _SettingsTile({
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
   final String title;
   final String subtitle;
   final VoidCallback onTap;

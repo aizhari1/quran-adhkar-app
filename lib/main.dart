@@ -7,6 +7,7 @@ import 'core/theme/app_theme.dart';
 import 'core/routing/app_router.dart';
 import 'core/database/app_database.dart';
 import 'features/settings/presentation/settings_screen.dart';
+import 'features/widgets/verse_widget_service.dart';
 
 final databaseProvider = Provider<AppDatabase>((ref) {
   final db = AppDatabase();
@@ -20,6 +21,12 @@ void main() async {
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
     statusBarColor: Colors.transparent,
   ));
+
+  try {
+    final widgetService = VerseWidgetService();
+    await widgetService.init();
+    await widgetService.showFallback();
+  } catch (_) {}
 
   runApp(
     const ProviderScope(

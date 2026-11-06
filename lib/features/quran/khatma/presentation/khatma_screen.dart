@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../data/khatma_prefs.dart';
 
 class KhatmaPlan {
   final String id;
@@ -29,11 +30,47 @@ class KhatmaPlan {
 class KhatmaState {
   final List<KhatmaPlan> plans;
   const KhatmaState({this.plans = const []});
-  KhatmaState copyWith({List<KhatmaPlan>? plans}) => KhatmaState(plans: plans ?? this.plans);
+  KhatmaState copyWith({List<KhatmaPlan>? plans}) =>
+      KhatmaState(plans: plans ?? this.plans);
 }
 
 class KhatmaNotifier extends StateNotifier<KhatmaState> {
-  KhatmaNotifier() : super(const KhatmaState());
+  KhatmaNotifier(this._prefs) : super(const KhatmaState()) {
+    _load();
+  }
+
+  final KhatmaPrefs _prefs;
+
+  Future<void> _load() async {
+    final raw = await _prefs.load();
+    final plans = raw
+        .map((m) => KhatmaPlan(
+              id: m['id'] as String,
+              name: m['name'] as String,
+              totalDays: m['totalDays'] as int,
+              startDate: DateTime.parse(m['startDate'] as String),
+              completedPages: m['completedPages'] as int? ?? 0,
+              totalPages: m['totalPages'] as int? ?? 604,
+              isActive: m['isActive'] as bool? ?? true,
+            ))
+        .toList();
+    state = KhatmaState(plans: plans);
+  }
+
+  Future<void> _persist() async {
+    final list = state.plans
+        .map((p) => {
+              'id': p.id,
+              'name': p.name,
+              'totalDays': p.totalDays,
+              'startDate': p.startDate.toIso8601String(),
+              'completedPages': p.completedPages,
+              'totalPages': p.totalPages,
+              'isActive': p.isActive,
+            })
+        .toList();
+    await _prefs.save(list);
+  }
 
   void addPlan({required String name, required int totalDays}) {
     final plan = KhatmaPlan(
@@ -43,6 +80,7 @@ class KhatmaNotifier extends StateNotifier<KhatmaState> {
       startDate: DateTime.now(),
     );
     state = state.copyWith(plans: [...state.plans, plan]);
+    _persist();
   }
 
   void markPagesRead(String id, int pages) {
@@ -61,14 +99,21 @@ class KhatmaNotifier extends StateNotifier<KhatmaState> {
         );
       }).toList(),
     );
+    _persist();
   }
 
   void deletePlan(String id) {
-    state = state.copyWith(plans: state.plans.where((p) => p.id != id).toList());
+    state = state.copyWith(
+      plans: state.plans.where((p) => p.id != id).toList(),
+    );
+    _persist();
   }
 }
 
-final khatmaProvider = StateNotifierProvider<KhatmaNotifier, KhatmaState>((ref) => KhatmaNotifier());
+final khatmaProvider =
+    StateNotifierProvider<KhatmaNotifier, KhatmaState>((ref) {
+  return KhatmaNotifier(ref.watch(khatmaPrefsProvider));
+});
 
 class KhatmaScreen extends ConsumerWidget {
   const KhatmaScreen({super.key});
@@ -85,11 +130,14 @@ class KhatmaScreen extends ConsumerWidget {
           ? _EmptyState(onCreate: () => _showCreateDialog(context, notifier))
           : ListView(
               padding: const EdgeInsets.all(16),
-              children: state.plans.map((plan) => _KhatmaCard(
-                plan: plan,
-                onAddPages: (pages) => notifier.markPagesRead(plan.id, pages),
-                onDelete: () => notifier.deletePlan(plan.id),
-              )).toList(),
+              children: state.plans
+                  .map((plan) => _KhatmaCard(
+                        plan: plan,
+                        onAddPages: (pages) =>
+                            notifier.markPagesRead(plan.id, pages),
+                        onDelete: () => notifier.deletePlan(plan.id),
+                      ))
+                  .toList(),
             ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showCreateDialog(context, notifier),
@@ -108,36 +156,62 @@ class KhatmaScreen extends ConsumerWidget {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
       builder: (ctx) => StatefulBuilder(
         builder: (context, setModalState) => Padding(
-          padding: EdgeInsets.only(left: 24, right: 24, top: 24, bottom: MediaQuery.of(context).viewInsets.bottom + 24),
+          padding: EdgeInsets.only(
+            left: 24,
+            right: 24,
+            top: 24,
+            bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text('إنشاء ختمة', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600), textAlign: TextAlign.center),
+              const Text(
+                'إنشاء ختمة',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                textAlign: TextAlign.center,
+              ),
               const SizedBox(height: 16),
-              TextField(controller: nameController, decoration: const InputDecoration(labelText: 'الاسم', border: OutlineInputBorder())),
+              TextField(
+                controller: nameController,
+                decoration: const InputDecoration(
+                  labelText: 'الاسم',
+                  border: OutlineInputBorder(),
+                ),
+              ),
               const SizedBox(height: 16),
               const Text('المدة', style: TextStyle(fontWeight: FontWeight.w500)),
               const SizedBox(height: 8),
               Wrap(
                 spacing: 8,
-                children: [7, 15, 30, 60].map((d) => ChoiceChip(
-                  label: Text('$d يوم'),
-                  selected: selectedDays == d,
-                  onSelected: (_) => setModalState(() => selectedDays = d),
-                  selectedColor: AppColors.deepEmerald.withOpacity(0.15),
-                )).toList(),
+                children: [7, 15, 30, 60]
+                    .map((d) => ChoiceChip(
+                          label: Text('$d يوم'),
+                          selected: selectedDays == d,
+                          onSelected: (_) =>
+                              setModalState(() => selectedDays = d),
+                          selectedColor:
+                              AppColors.deepEmerald.withOpacity(0.15),
+                        ))
+                    .toList(),
               ),
               const SizedBox(height: 8),
-              Text('≈ ${(604 / selectedDays).ceil()} صفحة يومياً', style: const TextStyle(fontSize: 13, color: AppColors.textMuted)),
+              Text(
+                '≈ ${(604 / selectedDays).ceil()} صفحة يومياً',
+                style: const TextStyle(fontSize: 13, color: AppColors.textMuted),
+              ),
               const SizedBox(height: 24),
               ElevatedButton(
                 onPressed: () {
                   notifier.addPlan(
-                    name: nameController.text.trim().isEmpty ? 'ختمة' : nameController.text.trim(),
+                    name: nameController.text.trim().isEmpty
+                        ? 'ختمة'
+                        : nameController.text.trim(),
                     totalDays: selectedDays,
                   );
                   Navigator.pop(ctx);
@@ -166,11 +240,22 @@ class _EmptyState extends StatelessWidget {
           children: [
             Icon(Icons.flag_outlined, size: 64, color: AppColors.mutedGold),
             const SizedBox(height: 16),
-            const Text('لا توجد ختمة بعد', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+            const Text(
+              'لا توجد ختمة بعد',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+            ),
             const SizedBox(height: 8),
-            const Text('أنشئ خطة لقراءة القرآن في 7 أو 15 أو 30 أو 60 يوماً', textAlign: TextAlign.center, style: TextStyle(color: AppColors.textMuted)),
+            const Text(
+              'أنشئ خطة لقراءة القرآن في 7 أو 15 أو 30 أو 60 يوماً',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: AppColors.textMuted),
+            ),
             const SizedBox(height: 24),
-            ElevatedButton.icon(onPressed: onCreate, icon: const Icon(Icons.add), label: const Text('ختمة جديدة')),
+            ElevatedButton.icon(
+              onPressed: onCreate,
+              icon: const Icon(Icons.add),
+              label: const Text('ختمة جديدة'),
+            ),
           ],
         ),
       ),
@@ -179,7 +264,11 @@ class _EmptyState extends StatelessWidget {
 }
 
 class _KhatmaCard extends StatelessWidget {
-  const _KhatmaCard({required this.plan, required this.onAddPages, required this.onDelete});
+  const _KhatmaCard({
+    required this.plan,
+    required this.onAddPages,
+    required this.onDelete,
+  });
   final KhatmaPlan plan;
   final void Function(int pages) onAddPages;
   final VoidCallback onDelete;
@@ -195,8 +284,20 @@ class _KhatmaCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                Expanded(child: Text(plan.name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600))),
-                IconButton(icon: const Icon(Icons.delete_outline, size: 20), onPressed: onDelete, color: AppColors.textMuted),
+                Expanded(
+                  child: Text(
+                    plan.name,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline, size: 20),
+                  onPressed: onDelete,
+                  color: AppColors.textMuted,
+                ),
               ],
             ),
             const SizedBox(height: 8),
@@ -206,25 +307,52 @@ class _KhatmaCard extends StatelessWidget {
                 value: plan.progress,
                 minHeight: 8,
                 backgroundColor: AppColors.borderLight,
-                valueColor: const AlwaysStoppedAnimation(AppColors.mutedGold),
+                valueColor:
+                    const AlwaysStoppedAnimation(AppColors.mutedGold),
               ),
             ),
             const SizedBox(height: 8),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('${plan.completedPages} / ${plan.totalPages} صفحة', style: const TextStyle(fontSize: 13, color: AppColors.textMuted)),
-                Text('${(plan.progress * 100).toStringAsFixed(0)}%', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.deepEmerald)),
+                Text(
+                  '${plan.completedPages} / ${plan.totalPages} صفحة',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: AppColors.textMuted,
+                  ),
+                ),
+                Text(
+                  '${(plan.progress * 100).toStringAsFixed(0)}%',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.deepEmerald,
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 4),
-            Text('${plan.pagesPerDay} صفحة/يوم • ${plan.totalDays} يوم • متبقي ${plan.remainingPages}', style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
+            Text(
+              '${plan.pagesPerDay} صفحة/يوم • ${plan.totalDays} يوم • متبقي ${plan.remainingPages}',
+              style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+            ),
             const SizedBox(height: 12),
             Row(
               children: [
-                Expanded(child: OutlinedButton(onPressed: () => onAddPages(plan.pagesPerDay), child: Text('+ ${plan.pagesPerDay} صفحة'))),
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => onAddPages(plan.pagesPerDay),
+                    child: Text('+ ${plan.pagesPerDay} صفحة'),
+                  ),
+                ),
                 const SizedBox(width: 8),
-                Expanded(child: ElevatedButton(onPressed: () => onAddPages(1), child: const Text('+1 صفحة'))),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () => onAddPages(1),
+                    child: const Text('+1 صفحة'),
+                  ),
+                ),
               ],
             ),
           ],

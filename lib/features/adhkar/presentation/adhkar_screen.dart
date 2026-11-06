@@ -2,9 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
+import '../data/adhkar_prefs.dart';
 
-/// Verified Adhkar structure (Hisn al-Muslim style).
-/// Full dataset will be seeded into Drift from a verified JSON source.
 class AdhkarItem {
   final int id;
   final String textArabic;
@@ -27,7 +26,6 @@ const morningAdhkar = [
     textArabic: 'أَصْبَحْنَا وَأَصْبَحَ الْمُلْكُ لِلَّهِ، وَالْحَمْدُ لِلَّهِ، لَا إِلَٰهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ وَهُوَ عَلَىٰ كُلِّ شَيْءٍ قَدِيرٌ',
     repetition: 1,
     source: 'مسلم',
-    translation: 'We have entered a new day and with it all dominion belongs to Allah...',
   ),
   AdhkarItem(
     id: 2,
@@ -103,7 +101,22 @@ class AdhkarProgressState {
 }
 
 class AdhkarNotifier extends StateNotifier<AdhkarProgressState> {
-  AdhkarNotifier() : super(const AdhkarProgressState());
+  AdhkarNotifier(this._prefs) : super(const AdhkarProgressState()) {
+    _load();
+  }
+
+  final AdhkarPrefs _prefs;
+
+  Future<void> _load() async {
+    final counts = await _prefs.loadCounts();
+    final completed = await _prefs.loadCompleted();
+    state = AdhkarProgressState(counts: counts, completed: completed);
+  }
+
+  Future<void> _persist() async {
+    await _prefs.saveCounts(state.counts);
+    await _prefs.saveCompleted(state.completed);
+  }
 
   void increment(int itemId, int max) {
     HapticFeedback.lightImpact();
@@ -114,6 +127,7 @@ class AdhkarNotifier extends StateNotifier<AdhkarProgressState> {
     final newCompleted = Set<int>.from(state.completed);
     if (next >= max) newCompleted.add(itemId);
     state = state.copyWith(counts: newCounts, completed: newCompleted);
+    _persist();
   }
 
   void resetCategory(List<AdhkarItem> items) {
@@ -124,12 +138,13 @@ class AdhkarNotifier extends StateNotifier<AdhkarProgressState> {
       newCompleted.remove(item.id);
     }
     state = state.copyWith(counts: newCounts, completed: newCompleted);
+    _persist();
   }
 }
 
 final adhkarProvider =
     StateNotifierProvider<AdhkarNotifier, AdhkarProgressState>((ref) {
-  return AdhkarNotifier();
+  return AdhkarNotifier(ref.watch(adhkarPrefsProvider));
 });
 
 class AdhkarScreen extends ConsumerStatefulWidget {
@@ -297,7 +312,8 @@ class _AdhkarCard extends StatelessWidget {
               Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
                       color: AppColors.mutedGold.withOpacity(0.15),
                       borderRadius: BorderRadius.circular(8),
@@ -313,7 +329,8 @@ class _AdhkarCard extends StatelessWidget {
                   ),
                   const Spacer(),
                   if (isDone)
-                    const Icon(Icons.check_circle, color: AppColors.success, size: 28)
+                    const Icon(Icons.check_circle,
+                        color: AppColors.success, size: 28)
                   else
                     Text(
                       '$current / ${item.repetition}',

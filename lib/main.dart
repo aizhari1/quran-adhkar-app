@@ -6,6 +6,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'core/theme/app_theme.dart';
 import 'core/routing/app_router.dart';
 import 'core/notifications/notification_service.dart';
+import 'features/onboarding/data/onboarding_prefs.dart';
 import 'features/settings/presentation/settings_screen.dart';
 import 'features/widgets/verse_widget_service.dart';
 
@@ -26,9 +27,14 @@ void main() async {
     await NotificationService().init();
   } catch (_) {}
 
+  final onboardingDone = await OnboardingPrefs.isDone();
+
   runApp(
-    const ProviderScope(
-      child: QuranAdhkarApp(),
+    ProviderScope(
+      overrides: [
+        onboardingDoneProvider.overrideWithValue(onboardingDone),
+      ],
+      child: const QuranAdhkarApp(),
     ),
   );
 }

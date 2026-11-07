@@ -6,7 +6,9 @@ import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:flutter_timezone/flutter_timezone.dart';
 
 class NotificationService {
-  NotificationService();
+  factory NotificationService() => _instance;
+  NotificationService._internal();
+  static final NotificationService _instance = NotificationService._internal();
 
   final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
@@ -27,20 +29,29 @@ class NotificationService {
       tz.setLocalLocation(tz.UTC);
     }
 
-    const android = AndroidInitializationSettings('@android:drawable/ic_dialog_info');
+    const android = AndroidInitializationSettings('ic_notification');
     const ios = DarwinInitializationSettings(
       requestAlertPermission: true,
       requestBadgePermission: true,
       requestSoundPermission: true,
     );
-    await _plugin.initialize(
-      const InitializationSettings(android: android, iOS: ios),
-    );
+    try {
+      await _plugin.initialize(
+        const InitializationSettings(android: android, iOS: ios),
+      );
+    } catch (e) {
+      debugPrint('notification init failed: $e');
+      return;
+    }
 
-    await _plugin
-        .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
-        ?.requestNotificationsPermission();
+    try {
+      await _plugin
+          .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>()
+          ?.requestNotificationsPermission();
+    } catch (e) {
+      debugPrint('notification permission request failed: $e');
+    }
 
     _initialized = true;
   }

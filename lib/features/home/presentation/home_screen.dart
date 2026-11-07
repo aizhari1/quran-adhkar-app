@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../adhkar/presentation/adhkar_screen.dart';
+import '../../prayer_times/presentation/prayer_times_screen.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -163,11 +166,34 @@ class _ActionTile extends StatelessWidget {
   }
 }
 
-class _NextPrayerCard extends StatelessWidget {
+class _NextPrayerCard extends ConsumerWidget {
   const _NextPrayerCard();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(prayerTimesProvider);
+    final notifier = ref.read(prayerTimesProvider.notifier);
+    final times = state.times;
+    final now = DateTime.now();
+
+    String nameAr = '--';
+    String nameEn = '';
+    String timeText = '--:--';
+    if (times != null) {
+      final entries = <(String, String, DateTime)>[
+        ('Fajr', 'الفجر', times.fajr.toLocal()),
+        ('Dhuhr', 'الظهر', times.dhuhr.toLocal()),
+        ('Asr', 'العصر', times.asr.toLocal()),
+        ('Maghrib', 'المغرب', times.maghrib.toLocal()),
+        ('Isha', 'العشاء', times.isha.toLocal()),
+      ];
+      var next = entries.where((e) => e.$3.isAfter(now)).firstOrNull;
+      next ??= ('Fajr', 'الفجر', notifier.nextDayFajr());
+      nameEn = next.$1;
+      nameAr = next.$2;
+      timeText = DateFormat.jm().format(next.$3);
+    }
+
     return Material(
       color: Colors.white,
       borderRadius: BorderRadius.circular(16),
@@ -191,24 +217,25 @@ class _NextPrayerCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    const Text(
                       'Next Prayer',
                       style: TextStyle(fontSize: 12, color: AppColors.textMuted),
                     ),
                     Text(
-                      'Dhuhr',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                      '$nameAr  $nameEn',
+                      style: const TextStyle(
+                          fontSize: 18, fontWeight: FontWeight.w600),
                     ),
                   ],
                 ),
               ),
-              const Text(
-                '12:45',
-                style: TextStyle(
+              Text(
+                timeText,
+                style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w700,
                   color: AppColors.deepEmerald,
@@ -268,11 +295,17 @@ class _ContinueReadingCard extends StatelessWidget {
   }
 }
 
-class _AdhkarReminderCard extends StatelessWidget {
+class _AdhkarReminderCard extends ConsumerWidget {
   const _AdhkarReminderCard();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final progress = ref.watch(adhkarProvider);
+    final done =
+        morningAdhkar.where((i) => progress.completed.contains(i.id)).length;
+    final status = done >= morningAdhkar.length
+        ? 'Completed today'
+        : '$done / ${morningAdhkar.length} completed';
     return Material(
       color: Colors.white,
       borderRadius: BorderRadius.circular(16),
@@ -297,17 +330,18 @@ class _AdhkarReminderCard extends StatelessWidget {
                 child: const Icon(Icons.wb_sunny_outlined, color: AppColors.mutedGold),
               ),
               const SizedBox(width: 12),
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    const Text(
                       'Morning Adhkar',
                       style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
                     ),
                     Text(
-                      'After Fajr • Not completed yet',
-                      style: TextStyle(fontSize: 13, color: AppColors.textMuted),
+                      'After Fajr • $status',
+                      style: const TextStyle(
+                          fontSize: 13, color: AppColors.textMuted),
                     ),
                   ],
                 ),

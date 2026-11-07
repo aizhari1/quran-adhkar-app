@@ -153,6 +153,18 @@ class PrayerTimesNotifier extends StateNotifier<PrayerTimesState> {
     }
   }
 
+  /// Fajr of the following day, used as "next prayer" after Isha.
+  DateTime nextDayFajr() {
+    final params = state.method.getParameters();
+    params.madhab = state.madhab;
+    final tomorrow = state.date.add(const Duration(days: 1));
+    return PrayerTimes(
+      state.coordinates,
+      DateComponents.from(tomorrow),
+      params,
+    ).fajr.toLocal();
+  }
+
   void syncFromSettings(AppSettingsState settings) {
     final method = _mapMethod(settings.calculationMethod);
     final madhab =
@@ -164,8 +176,9 @@ class PrayerTimesNotifier extends StateNotifier<PrayerTimesState> {
 
 final prayerTimesProvider =
     StateNotifierProvider<PrayerTimesNotifier, PrayerTimesState>((ref) {
-  final settings = ref.watch(appSettingsProvider);
-  final notifier = PrayerTimesNotifier(settings);
+  // read (not watch): watching would recreate the notifier on every settings
+  // change and reset the user's location back to Cairo.
+  final notifier = PrayerTimesNotifier(ref.read(appSettingsProvider));
   ref.listen<AppSettingsState>(appSettingsProvider, (_, next) {
     notifier.syncFromSettings(next);
   });
@@ -189,12 +202,12 @@ class PrayerTimesScreen extends ConsumerWidget {
     }
 
     final prayers = [
-      _PrayerInfo('Fajr', 'الفجر', times.fajr),
-      _PrayerInfo('Sunrise', 'الشروق', times.sunrise),
-      _PrayerInfo('Dhuhr', 'الظهر', times.dhuhr),
-      _PrayerInfo('Asr', 'العصر', times.asr),
-      _PrayerInfo('Maghrib', 'المغرب', times.maghrib),
-      _PrayerInfo('Isha', 'العشاء', times.isha),
+      _PrayerInfo('Fajr', 'الفجر', times.fajr.toLocal()),
+      _PrayerInfo('Sunrise', 'الشروق', times.sunrise.toLocal()),
+      _PrayerInfo('Dhuhr', 'الظهر', times.dhuhr.toLocal()),
+      _PrayerInfo('Asr', 'العصر', times.asr.toLocal()),
+      _PrayerInfo('Maghrib', 'المغرب', times.maghrib.toLocal()),
+      _PrayerInfo('Isha', 'العشاء', times.isha.toLocal()),
     ];
 
     _PrayerInfo? nextPrayer;
@@ -204,6 +217,8 @@ class PrayerTimesScreen extends ConsumerWidget {
         break;
       }
     }
+    // After Isha: next prayer is tomorrow's Fajr.
+    nextPrayer ??= _PrayerInfo('Fajr', 'الفجر', notifier.nextDayFajr());
 
     final timeFormat = DateFormat.jm();
 
@@ -307,7 +322,7 @@ class PrayerTimesScreen extends ConsumerWidget {
           ],
           const SizedBox(height: 12),
           ...prayers.map((p) {
-            final isNext = nextPrayer?.name == p.name;
+            final isNext = nextPrayer?.name == p.name && nextPrayer?.time == p.time;
             return Card(
               margin: const EdgeInsets.only(bottom: 8),
               color: isNext

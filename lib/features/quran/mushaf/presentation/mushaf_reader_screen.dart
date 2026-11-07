@@ -143,7 +143,7 @@ class _MushafReaderScreenState extends ConsumerState<MushafReaderScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.chevron_left),
+                    icon: const Icon(Icons.arrow_back),
                     onPressed: _currentPage > 1
                         ? () => _pageController.previousPage(
                               duration: const Duration(milliseconds: 250),
@@ -153,7 +153,7 @@ class _MushafReaderScreenState extends ConsumerState<MushafReaderScreen> {
                   ),
                   Text('$_currentPage / 604', style: const TextStyle(fontWeight: FontWeight.w600)),
                   IconButton(
-                    icon: const Icon(Icons.chevron_right),
+                    icon: const Icon(Icons.arrow_forward),
                     onPressed: _currentPage < 604
                         ? () => _pageController.nextPage(
                               duration: const Duration(milliseconds: 250),

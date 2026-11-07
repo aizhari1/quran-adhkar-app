@@ -16,8 +16,8 @@ class PrayerTimesState {
   final bool isLoadingLocation;
   final String? locationError;
 
-  const PrayerTimesState({
-    this.coordinates = const Coordinates(30.0444, 31.2357),
+  PrayerTimesState({
+    Coordinates? coordinates,
     this.method = CalculationMethod.egyptian,
     this.madhab = Madhab.shafi,
     required this.date,
@@ -25,7 +25,7 @@ class PrayerTimesState {
     this.cityName = 'Cairo',
     this.isLoadingLocation = false,
     this.locationError,
-  });
+  }) : coordinates = coordinates ?? Coordinates(30.0444, 31.2357);
 
   PrayerTimesState copyWith({
     Coordinates? coordinates,

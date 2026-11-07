@@ -35,7 +35,7 @@ class AppTheme {
         systemOverlayStyle: SystemUiOverlayStyle.dark,
         titleTextStyle: AppTypography.titleLarge,
       ),
-      cardTheme: CardThemeData(
+      cardTheme: CardTheme(
         color: Colors.white,
         elevation: 0,
         shape: RoundedRectangleBorder(
@@ -123,7 +123,7 @@ class AppTheme {
         titleTextStyle:
             AppTypography.titleLarge.copyWith(color: AppColors.textOnDark),
       ),
-      cardTheme: CardThemeData(
+      cardTheme: CardTheme(
         color: AppColors.cardDark,
         elevation: 0,
         shape: RoundedRectangleBorder(

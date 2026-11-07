@@ -45,7 +45,8 @@ final goRouterProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: 'mushaf',
                 builder: (context, state) {
-                  final page = int.tryParse(state.uri.queryParameters['page'] ?? '1') ?? 1;
+                  // No ?page= -> the reader resumes from the last page read.
+                  final page = int.tryParse(state.uri.queryParameters['page'] ?? '');
                   return MushafReaderScreen(initialPage: page);
                 },
               ),

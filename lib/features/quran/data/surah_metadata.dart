@@ -135,3 +135,19 @@ const List<SurahMeta> allSurahs = [
   SurahMeta(number: 113, nameArabic: 'الفلق', nameEnglish: 'Daybreak', nameTransliteration: 'Al-Falaq', ayahCount: 5, revelationType: 'Meccan', pageStart: 604),
   SurahMeta(number: 114, nameArabic: 'الناس', nameEnglish: 'Mankind', nameTransliteration: 'An-Nas', ayahCount: 6, revelationType: 'Meccan', pageStart: 604),
 ];
+
+/// Surah with [number] (1–114).
+SurahMeta surahByNumber(int number) => allSurahs[number - 1];
+
+/// The last surah that starts on or before [page] (1–604).
+SurahMeta surahForPage(int page) {
+  var result = allSurahs.first;
+  for (final s in allSurahs) {
+    if (s.pageStart <= page) {
+      result = s;
+    } else {
+      break;
+    }
+  }
+  return result;
+}

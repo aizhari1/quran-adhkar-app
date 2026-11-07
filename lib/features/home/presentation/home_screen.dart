@@ -5,6 +5,9 @@ import 'package:intl/intl.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../adhkar/presentation/adhkar_screen.dart';
 import '../../prayer_times/presentation/prayer_times_screen.dart';
+import '../../quran/data/quran_repository.dart';
+import '../../quran/data/reading_prefs.dart';
+import '../../quran/data/surah_metadata.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -249,16 +252,19 @@ class _NextPrayerCard extends ConsumerWidget {
   }
 }
 
-class _ContinueReadingCard extends StatelessWidget {
+class _ContinueReadingCard extends ConsumerWidget {
   const _ContinueReadingCard();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final lastPage = ref.watch(lastReadPageProvider);
+    final page = lastPage ?? 1;
+    final surah = surahForPage(page);
     return Material(
       color: Colors.white,
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
-        onTap: () => context.go('/quran/mushaf?page=42'),
+        onTap: () => context.go('/quran/mushaf?page=$page'),
         borderRadius: BorderRadius.circular(16),
         child: Container(
           padding: const EdgeInsets.all(16),
@@ -269,23 +275,31 @@ class _ContinueReadingCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Continue Reading',
-                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+              Text(
+                lastPage == null ? 'Start Reading' : 'Continue Reading',
+                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
               ),
               const SizedBox(height: 8),
               Text(
-                'سُورَةُ ٱلْبَقَرَةِ • آية 255',
-                style: TextStyle(
+                'سُورَةُ ${surah.nameArabic}',
+                style: const TextStyle(
                   fontFamily: 'ScheherazadeNew',
                   fontSize: 18,
                   color: AppColors.deepEmerald,
                 ),
               ),
               const SizedBox(height: 4),
-              const Text(
-                'Page 42 • Juz 3',
-                style: TextStyle(fontSize: 13, color: AppColors.textMuted),
+              FutureBuilder<List<AyahData>>(
+                future: ref.read(quranRepositoryProvider).getAyahsForPage(page),
+                builder: (context, snapshot) {
+                  final juz = (snapshot.data?.isNotEmpty ?? false)
+                      ? ' • Juz ${snapshot.data!.first.juzNumber}'
+                      : '';
+                  return Text(
+                    'Page $page$juz',
+                    style: const TextStyle(fontSize: 13, color: AppColors.textMuted),
+                  );
+                },
               ),
             ],
           ),

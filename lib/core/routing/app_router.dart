@@ -66,6 +66,14 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             pageBuilder: (context, state) => const NoTransitionPage(
               child: AdhkarScreen(),
             ),
+            routes: [
+              GoRoute(
+                path: 'category/:id',
+                builder: (context, state) => AdhkarCategoryScreen(
+                  categoryId: int.tryParse(state.pathParameters['id'] ?? '') ?? 1,
+                ),
+              ),
+            ],
           ),
           GoRoute(
             path: '/tasbeeh',
@@ -138,11 +146,11 @@ class _AppBottomNav extends ConsumerWidget {
         }
       },
       destinations: const [
-        NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: 'Home'),
-        NavigationDestination(icon: Icon(Icons.menu_book_outlined), selectedIcon: Icon(Icons.menu_book), label: 'Quran'),
-        NavigationDestination(icon: Icon(Icons.auto_awesome_outlined), selectedIcon: Icon(Icons.auto_awesome), label: 'Adhkar'),
-        NavigationDestination(icon: Icon(Icons.fingerprint_outlined), selectedIcon: Icon(Icons.fingerprint), label: 'Tasbeeh'),
-        NavigationDestination(icon: Icon(Icons.access_time_outlined), selectedIcon: Icon(Icons.access_time), label: 'Prayer'),
+        NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: 'الرئيسية'),
+        NavigationDestination(icon: Icon(Icons.menu_book_outlined), selectedIcon: Icon(Icons.menu_book), label: 'القرآن'),
+        NavigationDestination(icon: Icon(Icons.auto_awesome_outlined), selectedIcon: Icon(Icons.auto_awesome), label: 'الأذكار'),
+        NavigationDestination(icon: Icon(Icons.fingerprint_outlined), selectedIcon: Icon(Icons.fingerprint), label: 'التسبيح'),
+        NavigationDestination(icon: Icon(Icons.access_time_outlined), selectedIcon: Icon(Icons.access_time), label: 'الصلاة'),
       ],
     );
   }

@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
+import '../../../core/utils/arabic_format.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../adhkar/data/adhkar_repository.dart';
 import '../../adhkar/presentation/adhkar_screen.dart';
 import '../../prayer_times/presentation/prayer_times_screen.dart';
 import '../../quran/data/quran_repository.dart';
@@ -76,7 +77,7 @@ class _WelcomeCard extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            'Continue your daily journey with the Quran and Adhkar',
+            'واصل رحلتك اليومية مع القرآن والأذكار',
             style: TextStyle(
               color: AppColors.warmIvory.withOpacity(0.9),
               fontSize: 14,
@@ -99,7 +100,7 @@ class _QuickActions extends StatelessWidget {
         Expanded(
           child: _ActionTile(
             icon: Icons.menu_book,
-            label: 'Mushaf',
+            label: 'المصحف',
             color: AppColors.deepEmerald,
             onTap: () => context.go('/quran/mushaf'),
           ),
@@ -108,16 +109,16 @@ class _QuickActions extends StatelessWidget {
         Expanded(
           child: _ActionTile(
             icon: Icons.auto_awesome,
-            label: 'Adhkar',
+            label: 'الأذكار',
             color: AppColors.mutedGold,
-            onTap: () => context.go('/adhkar'),
+            onTap: () => context.go('/adhkar/category/1'),
           ),
         ),
         const SizedBox(width: 12),
         Expanded(
           child: _ActionTile(
             icon: Icons.fingerprint,
-            label: 'Tasbeeh',
+            label: 'التسبيح',
             color: AppColors.mutedGreen,
             onTap: () => context.go('/tasbeeh'),
           ),
@@ -180,7 +181,6 @@ class _NextPrayerCard extends ConsumerWidget {
     final now = DateTime.now();
 
     String nameAr = '--';
-    String nameEn = '';
     String timeText = '--:--';
     if (times != null) {
       final entries = <(String, String, DateTime)>[
@@ -192,9 +192,8 @@ class _NextPrayerCard extends ConsumerWidget {
       ];
       var next = entries.where((e) => e.$3.isAfter(now)).firstOrNull;
       next ??= ('Fajr', 'الفجر', notifier.nextDayFajr());
-      nameEn = next.$1;
       nameAr = next.$2;
-      timeText = DateFormat.jm().format(next.$3);
+      timeText = formatTimeAr(next.$3);
     }
 
     return Material(
@@ -225,11 +224,11 @@ class _NextPrayerCard extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'Next Prayer',
+                      'الصلاة القادمة',
                       style: TextStyle(fontSize: 12, color: AppColors.textMuted),
                     ),
                     Text(
-                      '$nameAr  $nameEn',
+                      nameAr,
                       style: const TextStyle(
                           fontSize: 18, fontWeight: FontWeight.w600),
                     ),
@@ -276,7 +275,7 @@ class _ContinueReadingCard extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                lastPage == null ? 'Start Reading' : 'Continue Reading',
+                lastPage == null ? 'ابدأ القراءة' : 'أكمل القراءة',
                 style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
               ),
               const SizedBox(height: 8),
@@ -293,10 +292,10 @@ class _ContinueReadingCard extends ConsumerWidget {
                 future: ref.read(quranRepositoryProvider).getAyahsForPage(page),
                 builder: (context, snapshot) {
                   final juz = (snapshot.data?.isNotEmpty ?? false)
-                      ? ' • Juz ${snapshot.data!.first.juzNumber}'
+                      ? ' • الجزء ${toArabicDigits(snapshot.data!.first.juzNumber)}'
                       : '';
                   return Text(
-                    'Page $page$juz',
+                    'صفحة ${toArabicDigits(page)}$juz',
                     style: const TextStyle(fontSize: 13, color: AppColors.textMuted),
                   );
                 },
@@ -315,16 +314,24 @@ class _AdhkarReminderCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final progress = ref.watch(adhkarProvider);
-    final done =
-        morningAdhkar.where((i) => progress.completed.contains(i.id)).length;
-    final status = done >= morningAdhkar.length
-        ? 'Completed today'
-        : '$done / ${morningAdhkar.length} completed';
+    final categories = ref.watch(adhkarCategoriesProvider).valueOrNull;
+    String status = 'اضغط للبدء';
+    if (categories != null) {
+      final morning =
+          categories.where((c) => c.id == kMorningEveningCategoryId).toList();
+      if (morning.isNotEmpty) {
+        final total = morning.first.items.length;
+        final done = completedIn(morning.first, progress);
+        status = done >= total
+            ? 'تم اليوم'
+            : '${toArabicDigits(done)} / ${toArabicDigits(total)} مكتمل';
+      }
+    }
     return Material(
       color: Colors.white,
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
-        onTap: () => context.go('/adhkar'),
+        onTap: () => context.go('/adhkar/category/1'),
         borderRadius: BorderRadius.circular(16),
         child: Container(
           padding: const EdgeInsets.all(16),
@@ -349,11 +356,11 @@ class _AdhkarReminderCard extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'Morning Adhkar',
+                      'أذكار الصباح والمساء',
                       style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
                     ),
                     Text(
-                      'After Fajr • $status',
+                      status,
                       style: const TextStyle(
                           fontSize: 13, color: AppColors.textMuted),
                     ),

@@ -27,7 +27,7 @@ class OnboardingScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 16),
               const Text(
-                'Your offline companion for Quran, Adhkar, and prayer',
+                'رفيقك للقرآن والأذكار ومواقيت الصلاة، بدون إنترنت',
                 textAlign: TextAlign.center,
                 style: TextStyle(color: AppColors.textSecondary),
               ),
@@ -37,7 +37,7 @@ class OnboardingScreen extends ConsumerWidget {
                   await OnboardingPrefs.markDone();
                   if (context.mounted) context.go('/home');
                 },
-                child: const Text('Get Started'),
+                child: const Text('ابدأ الآن'),
               ),
             ],
           ),

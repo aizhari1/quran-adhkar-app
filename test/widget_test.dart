@@ -31,7 +31,7 @@ void main() {
     expect(find.byType(QuranAdhkarApp), findsOneWidget);
   });
 
-  testWidgets('First run shows onboarding, then Get Started opens home',
+  testWidgets('First run shows onboarding, then ابدأ الآن opens home',
       (tester) async {
     await tester.pumpWidget(
       ProviderScope(
@@ -44,11 +44,11 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    expect(find.text('Get Started'), findsOneWidget);
-    await tester.tap(find.text('Get Started'));
+    expect(find.text('ابدأ الآن'), findsOneWidget);
+    await tester.tap(find.text('ابدأ الآن'));
     await tester.pump();
     await tester.pump(const Duration(seconds: 1));
-    expect(find.text('Get Started'), findsNothing);
+    expect(find.text('ابدأ الآن'), findsNothing);
   });
 
   test('Surah metadata is complete and consistent', () {

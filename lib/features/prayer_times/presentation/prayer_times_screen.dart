@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:adhan/adhan.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:intl/intl.dart';
+import '../../../core/utils/arabic_format.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../settings/presentation/settings_screen.dart';
 
@@ -22,7 +22,7 @@ class PrayerTimesState {
     this.madhab = Madhab.shafi,
     required this.date,
     this.times,
-    this.cityName = 'Cairo',
+    this.cityName = 'القاهرة',
     this.isLoadingLocation = false,
     this.locationError,
   }) : coordinates = coordinates ?? Coordinates(30.0444, 31.2357);
@@ -140,7 +140,7 @@ class PrayerTimesNotifier extends StateNotifier<PrayerTimesState> {
       state = state.copyWith(
         coordinates: Coordinates(pos.latitude, pos.longitude),
         cityName:
-            '${pos.latitude.toStringAsFixed(2)}, ${pos.longitude.toStringAsFixed(2)}',
+            'موقعي الحالي (${pos.latitude.toStringAsFixed(2)}, ${pos.longitude.toStringAsFixed(2)})',
         isLoadingLocation: false,
         clearError: true,
       );
@@ -220,7 +220,6 @@ class PrayerTimesScreen extends ConsumerWidget {
     // After Isha: next prayer is tomorrow's Fajr.
     nextPrayer ??= _PrayerInfo('Fajr', 'الفجر', notifier.nextDayFajr());
 
-    final timeFormat = DateFormat.jm();
 
     return Scaffold(
       backgroundColor: AppColors.warmIvory,
@@ -272,7 +271,7 @@ class PrayerTimesScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    DateFormat.yMMMEd().format(state.date),
+                    formatDateAr(state.date),
                     style: TextStyle(
                       color: AppColors.warmIvory.withOpacity(0.8),
                       fontSize: 13,
@@ -309,7 +308,7 @@ class PrayerTimesScreen extends ConsumerWidget {
                 leading:
                     const Icon(Icons.access_time, color: AppColors.mutedGold),
                 title: Text('التالي: ${nextPrayer.nameAr}'),
-                subtitle: Text(timeFormat.format(nextPrayer.time)),
+                subtitle: Text(formatTimeAr(nextPrayer.time)),
                 trailing: Text(
                   _countdown(nextPrayer.time, now),
                   style: const TextStyle(
@@ -336,9 +335,8 @@ class PrayerTimesScreen extends ConsumerWidget {
                     color: AppColors.deepEmerald,
                   ),
                 ),
-                subtitle: Text(p.name),
                 trailing: Text(
-                  timeFormat.format(p.time),
+                  formatTimeAr(p.time),
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,

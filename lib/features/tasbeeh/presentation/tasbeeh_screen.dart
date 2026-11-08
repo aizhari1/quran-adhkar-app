@@ -34,7 +34,7 @@ final tasbeehProvider = StateNotifierProvider<TasbeehNotifier, TasbeehState>((re
 class TasbeehNotifier extends StateNotifier<TasbeehState> {
   TasbeehNotifier(this._prefs)
       : super(const TasbeehState(
-          name: 'Subhan Allah',
+          name: 'سبحان الله',
           nameArabic: 'سُبْحَانَ ٱللَّهِ',
         )) {
     _load();
@@ -100,15 +100,15 @@ class TasbeehScreen extends ConsumerWidget {
               showDialog(
                 context: context,
                 builder: (ctx) => AlertDialog(
-                  title: const Text('Reset counter?'),
+                  title: const Text('تصفير العدّاد؟'),
                   actions: [
-                    TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('No')),
+                    TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('لا')),
                     TextButton(
                       onPressed: () {
                         notifier.reset();
                         Navigator.pop(ctx);
                       },
-                      child: const Text('Yes'),
+                      child: const Text('نعم'),
                     ),
                   ],
                 ),
@@ -129,22 +129,22 @@ class TasbeehScreen extends ConsumerWidget {
                   _DhikrChip(
                     label: 'سبحان الله',
                     selected: state.nameArabic.contains('سُبْحَان'),
-                    onTap: () => notifier.setDhikr('Subhan Allah', 'سُبْحَانَ ٱللَّهِ'),
+                    onTap: () => notifier.setDhikr('سبحان الله', 'سُبْحَانَ ٱللَّهِ'),
                   ),
                   _DhikrChip(
                     label: 'الحمد لله',
                     selected: state.nameArabic.contains('ٱلْحَمْد'),
-                    onTap: () => notifier.setDhikr('Alhamdulillah', 'ٱلْحَمْدُ لِلَّهِ'),
+                    onTap: () => notifier.setDhikr('الحمد لله', 'ٱلْحَمْدُ لِلَّهِ'),
                   ),
                   _DhikrChip(
                     label: 'الله أكبر',
                     selected: state.nameArabic.contains('أَكْبَر'),
-                    onTap: () => notifier.setDhikr('Allahu Akbar', 'ٱللَّهُ أَكْبَرُ'),
+                    onTap: () => notifier.setDhikr('الله أكبر', 'ٱللَّهُ أَكْبَرُ'),
                   ),
                   _DhikrChip(
                     label: 'أستغفر الله',
                     selected: state.nameArabic.contains('أَسْتَغْفِر'),
-                    onTap: () => notifier.setDhikr('Astaghfirullah', 'أَسْتَغْفِرُ ٱللَّهَ', target: 100),
+                    onTap: () => notifier.setDhikr('أستغفر الله', 'أَسْتَغْفِرُ ٱللَّهَ', target: 100),
                   ),
                 ],
               ),
@@ -162,7 +162,7 @@ class TasbeehScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              state.name,
+              RegExp(r'[A-Za-z]').hasMatch(state.name) ? '' : state.name,
               style: const TextStyle(fontSize: 16, color: AppColors.textSecondary),
             ),
             const SizedBox(height: 40),
@@ -219,7 +219,7 @@ class TasbeehScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 24),
             Text(
-              'Tap the circle to count',
+              'اضغط على الدائرة للعدّ',
               style: TextStyle(color: AppColors.textMuted.withOpacity(0.8), fontSize: 13),
             ),
             const Spacer(flex: 2),

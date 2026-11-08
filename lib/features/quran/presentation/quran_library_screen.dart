@@ -55,7 +55,7 @@ class QuranLibraryScreen extends ConsumerWidget {
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                child: Text('${surahs.length} Surahs', style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
+                child: Text('${toArabicDigits(surahs.length)} سورة', style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
               ),
               Expanded(
                 child: ListView.builder(
@@ -157,10 +157,10 @@ class _SurahTile extends StatelessWidget {
           textDirection: TextDirection.rtl,
         ),
         subtitle: Text(
-          '${surah.nameTransliteration} • ${surah.ayahCount} Ayahs • ${surah.revelationType}',
+          '${surah.revelationType == 'Meccan' ? 'مكية' : 'مدنية'} • ${toArabicDigits(surah.ayahCount)} آية',
           style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
         ),
-        trailing: Text('p.${surah.pageStart}', style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
+        trailing: Text('ص ${toArabicDigits(surah.pageStart)}', style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
       ),
     );
   }

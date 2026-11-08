@@ -142,7 +142,7 @@ class NotificationService {
     await init();
     await _plugin.show(
       9999,
-      'Quran & Adhkar',
+      'القرآن والأذكار',
       'الإشعارات تعمل بشكل صحيح',
       const NotificationDetails(
         android: AndroidNotificationDetails(

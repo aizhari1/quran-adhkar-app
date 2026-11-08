@@ -11,7 +11,7 @@ class RecitersScreen extends ConsumerWidget {
       backgroundColor: AppColors.warmIvory,
       appBar: AppBar(title: const Text('القراء')),
       body: const Center(
-        child: Text('Reciters library – audio sources will be added with verified URLs only'),
+        child: Text('مكتبة القرّاء قيد الإعداد، وسيُضاف الصوت من مصادر موثّقة فقط'),
       ),
     );
   }

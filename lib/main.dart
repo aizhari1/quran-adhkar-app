@@ -48,7 +48,7 @@ class QuranAdhkarApp extends ConsumerWidget {
     final settings = ref.watch(appSettingsProvider);
 
     return MaterialApp.router(
-      title: 'Quran & Adhkar',
+      title: 'القرآن والأذكار',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,

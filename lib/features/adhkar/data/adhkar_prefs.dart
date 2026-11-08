@@ -24,39 +24,38 @@ class AdhkarPrefs {
     return true;
   }
 
-  Future<Map<int, int>> loadCounts() async {
+  Future<Map<String, int>> loadCounts() async {
     final p = await SharedPreferences.getInstance();
     if (await _isStale(p)) return {};
     final raw = p.getString(_countsKey);
     if (raw == null) return {};
     try {
       final map = jsonDecode(raw) as Map<String, dynamic>;
-      return map.map((k, v) => MapEntry(int.parse(k), v as int));
+      return map.map((k, v) => MapEntry(k, v as int));
     } catch (_) {
       return {};
     }
   }
 
-  Future<Set<int>> loadCompleted() async {
+  Future<Set<String>> loadCompleted() async {
     final p = await SharedPreferences.getInstance();
     if (await _isStale(p)) return {};
     final list = p.getStringList(_completedKey);
     if (list == null) return {};
-    return list.map(int.parse).toSet();
+    return list.toSet();
   }
 
-  Future<void> saveCounts(Map<int, int> counts) async {
+  Future<void> saveCounts(Map<String, int> counts) async {
     final p = await SharedPreferences.getInstance();
     await p.setString(_dateKey, _today());
-    final map = counts.map((k, v) => MapEntry(k.toString(), v));
+    final map = Map<String, int>.from(counts);
     await p.setString(_countsKey, jsonEncode(map));
   }
 
-  Future<void> saveCompleted(Set<int> completed) async {
+  Future<void> saveCompleted(Set<String> completed) async {
     final p = await SharedPreferences.getInstance();
     await p.setString(_dateKey, _today());
-    await p.setStringList(
-        _completedKey, completed.map((e) => e.toString()).toList());
+    await p.setStringList(_completedKey, completed.toList());
   }
 }
 

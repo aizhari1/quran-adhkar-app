@@ -14,6 +14,9 @@ class AppSettingsState {
   final bool morningAdhkarEnabled;
   final bool eveningAdhkarEnabled;
   final bool widgetAutoProgress;
+  final bool dhikrReminderEnabled;
+  final int dhikrIntervalMinutes;
+  final bool dhikrQuietHours;
 
   const AppSettingsState({
     this.languageCode = 'ar',
@@ -25,6 +28,9 @@ class AppSettingsState {
     this.morningAdhkarEnabled = true,
     this.eveningAdhkarEnabled = true,
     this.widgetAutoProgress = true,
+    this.dhikrReminderEnabled = true,
+    this.dhikrIntervalMinutes = 15,
+    this.dhikrQuietHours = true,
   });
 
   AppSettingsState copyWith({
@@ -37,6 +43,9 @@ class AppSettingsState {
     bool? morningAdhkarEnabled,
     bool? eveningAdhkarEnabled,
     bool? widgetAutoProgress,
+    bool? dhikrReminderEnabled,
+    int? dhikrIntervalMinutes,
+    bool? dhikrQuietHours,
   }) {
     return AppSettingsState(
       languageCode: languageCode ?? this.languageCode,
@@ -48,6 +57,9 @@ class AppSettingsState {
       morningAdhkarEnabled: morningAdhkarEnabled ?? this.morningAdhkarEnabled,
       eveningAdhkarEnabled: eveningAdhkarEnabled ?? this.eveningAdhkarEnabled,
       widgetAutoProgress: widgetAutoProgress ?? this.widgetAutoProgress,
+      dhikrReminderEnabled: dhikrReminderEnabled ?? this.dhikrReminderEnabled,
+      dhikrIntervalMinutes: dhikrIntervalMinutes ?? this.dhikrIntervalMinutes,
+      dhikrQuietHours: dhikrQuietHours ?? this.dhikrQuietHours,
     );
   }
 }
@@ -69,14 +81,24 @@ class AppSettingsNotifier extends StateNotifier<AppSettingsState> {
   Future<void> _persist() => _prefs.save(state);
 
   Future<void> _syncNotifications() async {
-    if (!state.notificationsEnabled) {
-      await _notifications.cancelAdhkar();
-      return;
+    try {
+      if (!state.notificationsEnabled) {
+        await _notifications.cancelAdhkar();
+        await _notifications.cancelDhikrReminders();
+        return;
+      }
+      await _notifications.scheduleDailyAdhkar(
+        morningEnabled: state.morningAdhkarEnabled,
+        eveningEnabled: state.eveningAdhkarEnabled,
+      );
+      await _notifications.scheduleDhikrReminders(
+        enabled: state.dhikrReminderEnabled,
+        intervalMinutes: state.dhikrIntervalMinutes,
+        quietHours: state.dhikrQuietHours,
+      );
+    } catch (e) {
+      debugPrint('notification sync failed: $e');
     }
-    await _notifications.scheduleDailyAdhkar(
-      morningEnabled: state.morningAdhkarEnabled,
-      eveningEnabled: state.eveningAdhkarEnabled,
-    );
   }
 
   void setLanguage(String code) {
@@ -118,6 +140,24 @@ class AppSettingsNotifier extends StateNotifier<AppSettingsState> {
 
   void setEveningAdhkar(bool v) {
     state = state.copyWith(eveningAdhkarEnabled: v);
+    _persist();
+    _syncNotifications();
+  }
+
+  void setDhikrReminder(bool v) {
+    state = state.copyWith(dhikrReminderEnabled: v);
+    _persist();
+    _syncNotifications();
+  }
+
+  void setDhikrInterval(int minutes) {
+    state = state.copyWith(dhikrIntervalMinutes: minutes);
+    _persist();
+    _syncNotifications();
+  }
+
+  void setDhikrQuietHours(bool v) {
+    state = state.copyWith(dhikrQuietHours: v);
     _persist();
     _syncNotifications();
   }
@@ -203,6 +243,39 @@ class SettingsScreen extends ConsumerWidget {
             value: s.eveningAdhkarEnabled,
             activeColor: AppColors.deepEmerald,
             onChanged: s.notificationsEnabled ? n.setEveningAdhkar : null,
+          ),
+          SwitchListTile(
+            title: const Text('تذكير «صلِّ على النبي» و«اذكر الله»'),
+            subtitle: Text(
+              'إشعار تلقائي ${_dhikrIntervalLabel(s.dhikrIntervalMinutes)}',
+            ),
+            value: s.dhikrReminderEnabled,
+            activeColor: AppColors.deepEmerald,
+            onChanged: s.notificationsEnabled ? n.setDhikrReminder : null,
+          ),
+          _SettingsTile(
+            title: 'تكرار التذكير',
+            subtitle: _dhikrIntervalLabel(s.dhikrIntervalMinutes),
+            onTap: () => _showPicker(
+              context,
+              'تكرار التذكير',
+              const {
+                '15': 'كل ١٥ دقيقة',
+                '30': 'كل ٣٠ دقيقة',
+                '60': 'كل ساعة',
+              },
+              '${s.dhikrIntervalMinutes}',
+              (v) => n.setDhikrInterval(int.tryParse(v) ?? 15),
+            ),
+          ),
+          SwitchListTile(
+            title: const Text('إيقاف التذكير ليلاً'),
+            subtitle: const Text('من ١١ مساءً حتى ٤ فجراً'),
+            value: s.dhikrQuietHours,
+            activeColor: AppColors.deepEmerald,
+            onChanged: (s.notificationsEnabled && s.dhikrReminderEnabled)
+                ? n.setDhikrQuietHours
+                : null,
           ),
           SwitchListTile(
             title: const Text('تقدم تلقائي في الـ Widget'),
@@ -355,6 +428,17 @@ class SettingsScreen extends ConsumerWidget {
       'north_america': 'إسنا',
     };
     _showPicker(context, 'طريقة الحساب', options, current, n.setCalculationMethod);
+  }
+
+  String _dhikrIntervalLabel(int minutes) {
+    switch (minutes) {
+      case 30:
+        return 'كل ٣٠ دقيقة';
+      case 60:
+        return 'كل ساعة';
+      default:
+        return 'كل ١٥ دقيقة';
+    }
   }
 
   void _pickAsr(BuildContext context, AppSettingsNotifier n, String current) {

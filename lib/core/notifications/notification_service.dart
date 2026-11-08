@@ -16,6 +16,14 @@ class NotificationService {
   static const morningId = 1001;
   static const eveningId = 1002;
 
+  /// IDs [dhikrIdBase, dhikrIdBase + 1000) belong to the periodic reminders.
+  static const dhikrIdBase = 2000;
+  static const _dhikrWindowHours = 48;
+  static const _dhikrMessages = <String>[
+    'صلِّ على النبي صلى الله عليه وسلم',
+    'اذكر الله',
+  ];
+
   bool _initialized = false;
 
   Future<void> init() async {
@@ -84,6 +92,87 @@ class NotificationService {
         hour: eveningHour,
         minute: eveningMinute,
       );
+    }
+  }
+
+  /// Periodic "صلِّ على النبي / اذكر الله" reminders.
+  ///
+  /// Android has no built-in 15-minute repeat, so the next [_dhikrWindowHours]
+  /// hours of reminders are scheduled up front and the window is refreshed every
+  /// time the app starts or the settings change. Delivery uses inexact alarms,
+  /// so Android may shift a reminder by a few minutes while the phone is idle.
+  Future<void> scheduleDhikrReminders({
+    required bool enabled,
+    int intervalMinutes = 15,
+    bool quietHours = true,
+  }) async {
+    await init();
+    await cancelDhikrReminders();
+    if (!enabled) return;
+
+    final interval = const [15, 30, 60].contains(intervalMinutes)
+        ? intervalMinutes
+        : 15;
+    final now = tz.TZDateTime.now(tz.local);
+    var t = tz.TZDateTime(
+      tz.local,
+      now.year,
+      now.month,
+      now.day,
+      now.hour,
+      (now.minute ~/ interval) * interval,
+    ).add(Duration(minutes: interval));
+    final end = now.add(const Duration(hours: _dhikrWindowHours));
+
+    const details = NotificationDetails(
+      android: AndroidNotificationDetails(
+        'dhikr_reminder_channel',
+        'تذكير بالذكر',
+        channelDescription: 'تذكير دوري: صلِّ على النبي، اذكر الله',
+        importance: Importance.defaultImportance,
+        priority: Priority.defaultPriority,
+        enableVibration: false,
+        timeoutAfter: 600000, // clears itself after 10 minutes
+      ),
+      iOS: DarwinNotificationDetails(),
+    );
+
+    var id = dhikrIdBase;
+    try {
+      while (t.isBefore(end) && id < dhikrIdBase + 400) {
+        // Quiet hours: no reminders from 23:00 until 04:00.
+        final quiet = quietHours && (t.hour >= 23 || t.hour < 4);
+        if (!quiet) {
+          final slot = t.millisecondsSinceEpoch ~/ (interval * 60000);
+          await _plugin.zonedSchedule(
+            id,
+            'القرآن والأذكار',
+            _dhikrMessages[slot % _dhikrMessages.length],
+            t,
+            details,
+            androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+            uiLocalNotificationDateInterpretation:
+                UILocalNotificationDateInterpretation.absoluteTime,
+          );
+          id++;
+        }
+        t = t.add(Duration(minutes: interval));
+      }
+    } catch (e) {
+      debugPrint('scheduleDhikrReminders failed: $e');
+    }
+  }
+
+  Future<void> cancelDhikrReminders() async {
+    try {
+      final pending = await _plugin.pendingNotificationRequests();
+      for (final p in pending) {
+        if (p.id >= dhikrIdBase && p.id < dhikrIdBase + 1000) {
+          await _plugin.cancel(p.id);
+        }
+      }
+    } catch (e) {
+      debugPrint('cancelDhikrReminders failed: $e');
     }
   }
 

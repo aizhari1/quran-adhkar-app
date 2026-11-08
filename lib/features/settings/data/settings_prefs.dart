@@ -20,6 +20,9 @@ class SettingsPrefs {
       morningAdhkarEnabled: p.getBool('${_prefix}morning') ?? true,
       eveningAdhkarEnabled: p.getBool('${_prefix}evening') ?? true,
       widgetAutoProgress: p.getBool('${_prefix}widget') ?? true,
+      dhikrReminderEnabled: p.getBool('${_prefix}dhikr') ?? true,
+      dhikrIntervalMinutes: p.getInt('${_prefix}dhikr_interval') ?? 15,
+      dhikrQuietHours: p.getBool('${_prefix}dhikr_quiet') ?? true,
     );
   }
 
@@ -34,6 +37,9 @@ class SettingsPrefs {
     await p.setBool('${_prefix}morning', s.morningAdhkarEnabled);
     await p.setBool('${_prefix}evening', s.eveningAdhkarEnabled);
     await p.setBool('${_prefix}widget', s.widgetAutoProgress);
+    await p.setBool('${_prefix}dhikr', s.dhikrReminderEnabled);
+    await p.setInt('${_prefix}dhikr_interval', s.dhikrIntervalMinutes);
+    await p.setBool('${_prefix}dhikr_quiet', s.dhikrQuietHours);
   }
 
   ThemeMode _parseTheme(String v) {

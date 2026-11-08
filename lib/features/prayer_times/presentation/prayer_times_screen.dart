@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:adhan/adhan.dart';
 import 'package:geolocator/geolocator.dart';
 import '../../../core/utils/arabic_format.dart';
+import '../../widgets/home_widget_sync.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../settings/presentation/settings_screen.dart';
 
@@ -91,6 +92,13 @@ class PrayerTimesNotifier extends StateNotifier<PrayerTimesState> {
       params,
     );
     state = state.copyWith(times: times);
+    // Keep the home-screen prayer widget in sync (fire and forget).
+    HomeWidgetSync.pushPrayerTimes(
+      coordinates: state.coordinates,
+      method: state.method,
+      madhab: state.madhab,
+      city: state.cityName,
+    );
   }
 
   void setDate(DateTime date) {

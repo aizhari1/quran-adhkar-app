@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../quran/data/quran_repository.dart' show normalizeArabic, toArabicDigits;
+import '../../audio/audio_controller.dart';
+import '../../audio/audio_sources.dart';
 import '../data/adhkar_prefs.dart';
 import '../data/adhkar_repository.dart';
 
@@ -286,6 +288,13 @@ class AdhkarCategoryScreen extends ConsumerWidget {
     final progress = ref.watch(adhkarProvider);
     final notifier = ref.read(adhkarProvider.notifier);
 
+    ref.listen<AudioState>(audioControllerProvider, (prev, next) {
+      if (next.error != null && next.error != prev?.error) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(next.error!)));
+      }
+    });
+
     return async.when(
       loading: () => const Scaffold(
         body: Center(child: CircularProgressIndicator()),
@@ -357,6 +366,7 @@ class AdhkarCategoryScreen extends ConsumerWidget {
                     final item = category.items[index];
                     final key = category.keyFor(item);
                     return _AdhkarCard(
+                      categoryId: category.id,
                       item: item,
                       current: progress.counts[key] ?? 0,
                       isDone: progress.completed.contains(key),
@@ -373,20 +383,25 @@ class AdhkarCategoryScreen extends ConsumerWidget {
   }
 }
 
-class _AdhkarCard extends StatelessWidget {
+class _AdhkarCard extends ConsumerWidget {
   const _AdhkarCard({
+    required this.categoryId,
     required this.item,
     required this.current,
     required this.isDone,
     required this.onTap,
   });
+  final int categoryId;
   final AdhkarItem item;
   final int current;
   final bool isDone;
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final audio = ref.watch(audioControllerProvider);
+    final audioKey = 'a:$categoryId:${item.id}';
+    final thisAudio = audio.mode == AudioMode.adhkar && audio.currentKey == audioKey;
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       color: isDone ? AppColors.deepEmerald.withOpacity(0.06) : Theme.of(context).colorScheme.surfaceContainerLowest,
@@ -412,6 +427,25 @@ class _AdhkarCard extends StatelessWidget {
               const SizedBox(height: 12),
               Row(
                 children: [
+                  if (item.audio != null)
+                    IconButton(
+                      tooltip: thisAudio && audio.isPlaying ? 'إيقاف الصوت' : 'استماع',
+                      onPressed: () => ref
+                          .read(audioControllerProvider.notifier)
+                          .playAdhkar(audioKey, adhkarAudioUrls(item.audio!)),
+                      icon: thisAudio && audio.isLoading
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : Icon(
+                              thisAudio && audio.isPlaying
+                                  ? Icons.stop_circle_outlined
+                                  : Icons.volume_up_outlined,
+                              color: AppColors.deepEmerald,
+                            ),
+                    ),
                   if (item.count > 1)
                     Container(
                       padding: const EdgeInsets.symmetric(

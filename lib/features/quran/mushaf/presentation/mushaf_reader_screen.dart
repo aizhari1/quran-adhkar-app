@@ -1,7 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../audio/audio_controller.dart';
 import '../../../settings/presentation/settings_screen.dart';
+import '../../reciters/presentation/reciters_screen.dart';
 import '../../data/quran_repository.dart';
 import '../../data/reading_prefs.dart';
 import '../../data/surah_metadata.dart';
@@ -18,6 +21,8 @@ class MushafReaderScreen extends ConsumerStatefulWidget {
 class _MushafReaderScreenState extends ConsumerState<MushafReaderScreen> {
   late int _currentPage;
   late PageController _pageController;
+  StreamSubscription<void>? _completedSub;
+  bool _autoAdvancing = false;
 
   @override
   void initState() {
@@ -25,6 +30,48 @@ class _MushafReaderScreenState extends ConsumerState<MushafReaderScreen> {
     _currentPage = (widget.initialPage ?? 1).clamp(1, 604).toInt();
     _pageController = PageController(initialPage: _currentPage - 1);
     if (widget.initialPage == null) _resumeLastPage();
+    // When a page's recitation ends, turn the page and keep reciting.
+    _completedSub = ref
+        .read(audioControllerProvider.notifier)
+        .completed
+        .listen((_) => _advanceAndPlay());
+  }
+
+  Future<void> _togglePlay() async {
+    final ayahs =
+        await ref.read(quranRepositoryProvider).getAyahsForPage(_currentPage);
+    await ref.read(audioControllerProvider.notifier).togglePage(ayahs);
+  }
+
+  Future<void> _advanceAndPlay() async {
+    if (!mounted || _currentPage >= 604) return;
+    _autoAdvancing = true;
+    try {
+      await _pageController.nextPage(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    } finally {
+      _autoAdvancing = false;
+    }
+    if (!mounted) return;
+    final ayahs =
+        await ref.read(quranRepositoryProvider).getAyahsForPage(_currentPage);
+    await ref.read(audioControllerProvider.notifier).playAyahs(ayahs);
+  }
+
+  void _pickReciter() {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => SafeArea(
+        child: ConstrainedBox(
+          constraints:
+              BoxConstraints(maxHeight: MediaQuery.of(ctx).size.height * 0.7),
+          child: ReciterList(onSelected: () => Navigator.pop(ctx)),
+        ),
+      ),
+    );
   }
 
   Future<void> _resumeLastPage() async {
@@ -37,6 +84,9 @@ class _MushafReaderScreenState extends ConsumerState<MushafReaderScreen> {
 
   @override
   void dispose() {
+    _completedSub?.cancel();
+    final audio = ref.read(audioControllerProvider.notifier);
+    Future.microtask(audio.stop);
     _pageController.dispose();
     super.dispose();
   }
@@ -63,6 +113,13 @@ class _MushafReaderScreenState extends ConsumerState<MushafReaderScreen> {
     final repo = ref.watch(quranRepositoryProvider);
     final fontSize = ref.watch(appSettingsProvider).quranFontSize;
     final isBookmarked = ref.watch(bookmarksProvider).contains(_currentPage);
+    final audio = ref.watch(audioControllerProvider);
+    ref.listen<AudioState>(audioControllerProvider, (prev, next) {
+      if (next.error != null && next.error != prev?.error) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(next.error!)));
+      }
+    });
     final surah = surahForPage(_currentPage);
 
     return Scaffold(
@@ -72,6 +129,11 @@ class _MushafReaderScreenState extends ConsumerState<MushafReaderScreen> {
           style: const TextStyle(fontFamily: 'NotoNaskhArabic'),
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.record_voice_over_outlined),
+            tooltip: 'اختيار القارئ',
+            onPressed: _pickReciter,
+          ),
           IconButton(
             icon: const Icon(Icons.text_decrease),
             tooltip: 'تصغير الخط',
@@ -110,12 +172,17 @@ class _MushafReaderScreenState extends ConsumerState<MushafReaderScreen> {
                 final page = index + 1;
                 setState(() => _currentPage = page);
                 ref.read(lastReadPageProvider.notifier).set(page);
+                // Swiping away while reciting stops the recitation.
+                if (!_autoAdvancing && ref.read(audioControllerProvider).quranActive) {
+                  ref.read(audioControllerProvider.notifier).stop();
+                }
               },
               itemBuilder: (context, index) => _MushafPage(
                 key: ValueKey('mushaf-page-${index + 1}'),
                 page: index + 1,
                 repo: repo,
                 fontSize: fontSize,
+                highlightKey: audio.quranActive ? audio.currentKey : null,
               ),
             ),
           ),
@@ -136,8 +203,23 @@ class _MushafReaderScreenState extends ConsumerState<MushafReaderScreen> {
                             )
                         : null,
                   ),
-                  Text('$_currentPage / 604',
-                      style: const TextStyle(fontWeight: FontWeight.w600)),
+                  FilledButton.tonalIcon(
+                    onPressed: _togglePlay,
+                    icon: audio.quranActive && audio.isLoading
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : Icon(audio.quranActive && audio.isPlaying
+                            ? Icons.pause_rounded
+                            : Icons.play_arrow_rounded),
+                    label: Text(audio.quranActive && audio.isLoading
+                        ? 'جارٍ التحميل'
+                        : (audio.quranActive && audio.isPlaying
+                            ? 'إيقاف مؤقت'
+                            : 'استماع')),
+                  ),
                   IconButton(
                     icon: const Icon(Icons.arrow_forward),
                     onPressed: _currentPage < 604
@@ -169,11 +251,15 @@ class _MushafPage extends StatefulWidget {
     required this.page,
     required this.repo,
     required this.fontSize,
+    this.highlightKey,
   });
 
   final int page;
   final QuranRepository repo;
   final double fontSize;
+
+  /// "surah:ayah" of the ayah currently being recited, if any.
+  final String? highlightKey;
 
   @override
   State<_MushafPage> createState() => _MushafPageState();
@@ -255,7 +341,14 @@ class _MushafPageState extends State<_MushafPage> {
           fontSize: widget.fontSize,
         ));
       }
-      spans.add(TextSpan(text: ayah.textUthmani));
+      final isCurrent =
+          widget.highlightKey == '${ayah.surahNumber}:${ayah.ayahNumber}';
+      spans.add(TextSpan(
+        text: ayah.textUthmani,
+        style: isCurrent
+            ? TextStyle(backgroundColor: AppColors.mutedGold.withOpacity(0.3))
+            : null,
+      ));
       spans.add(TextSpan(
         text: ' \uFD3F${toArabicDigits(ayah.ayahNumber)}\uFD3E ',
         style: TextStyle(

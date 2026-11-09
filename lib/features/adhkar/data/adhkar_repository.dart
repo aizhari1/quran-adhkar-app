@@ -7,7 +7,15 @@ class AdhkarItem {
   final int id;
   final String text;
   final int count;
-  const AdhkarItem({required this.id, required this.text, required this.count});
+
+  /// Audio file name in the source repository (e.g. "75.mp3"), if any.
+  final String? audio;
+  const AdhkarItem({
+    required this.id,
+    required this.text,
+    required this.count,
+    this.audio,
+  });
 }
 
 class AdhkarCategory {
@@ -42,6 +50,7 @@ List<AdhkarCategory> _parseCategories(String raw) {
         id: im['id'] as int,
         text: im['text'] as String,
         count: im['count'] as int,
+        audio: im['audio'] as String?,
       );
     }).toList(growable: false);
     return AdhkarCategory(

@@ -16,7 +16,6 @@ class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
-      backgroundColor: AppColors.warmIvory,
       appBar: AppBar(
         title: const Text('السلام عليكم'),
         actions: [
@@ -50,10 +49,14 @@ class _WelcomeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: AppColors.deepEmerald,
-        borderRadius: BorderRadius.circular(16),
+        gradient: const LinearGradient(
+          begin: Alignment.topRight,
+          end: Alignment.bottomLeft,
+          colors: [AppColors.deepEmerald, Color(0xFF3C97A0)],
+        ),
+        borderRadius: BorderRadius.circular(32),
         boxShadow: [
           BoxShadow(
             color: AppColors.deepEmerald.withOpacity(0.25),
@@ -143,7 +146,7 @@ class _ActionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.white,
+      color: Theme.of(context).colorScheme.surfaceContainerLowest,
       borderRadius: BorderRadius.circular(12),
       child: InkWell(
         onTap: onTap,
@@ -197,15 +200,15 @@ class _NextPrayerCard extends ConsumerWidget {
     }
 
     return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(16),
+      color: Theme.of(context).colorScheme.surfaceContainerLowest,
+      borderRadius: BorderRadius.circular(24),
       child: InkWell(
         onTap: () => context.go('/prayer'),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(24),
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(24),
             border: Border.all(color: AppColors.mutedGold.withOpacity(0.4)),
           ),
           child: Row(
@@ -260,15 +263,15 @@ class _ContinueReadingCard extends ConsumerWidget {
     final page = lastPage ?? 1;
     final surah = surahForPage(page);
     return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(16),
+      color: Theme.of(context).colorScheme.surfaceContainerLowest,
+      borderRadius: BorderRadius.circular(24),
       child: InkWell(
         onTap: () => context.go('/quran/mushaf?page=$page'),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(24),
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(24),
             border: Border.all(color: AppColors.borderLight),
           ),
           child: Column(
@@ -328,15 +331,15 @@ class _AdhkarReminderCard extends ConsumerWidget {
       }
     }
     return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(16),
+      color: Theme.of(context).colorScheme.surfaceContainerLowest,
+      borderRadius: BorderRadius.circular(24),
       child: InkWell(
         onTap: () => context.go('/adhkar/category/1'),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(24),
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(24),
             border: Border.all(color: AppColors.borderLight),
           ),
           child: Row(

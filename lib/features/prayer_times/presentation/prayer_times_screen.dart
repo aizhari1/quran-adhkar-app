@@ -230,7 +230,6 @@ class PrayerTimesScreen extends ConsumerWidget {
 
 
     return Scaffold(
-      backgroundColor: AppColors.warmIvory,
       appBar: AppBar(
         title: const Text('مواقيت الصلاة'),
         actions: [
@@ -334,7 +333,7 @@ class PrayerTimesScreen extends ConsumerWidget {
               margin: const EdgeInsets.only(bottom: 8),
               color: isNext
                   ? AppColors.deepEmerald.withOpacity(0.08)
-                  : Colors.white,
+                  : Theme.of(context).colorScheme.surfaceContainerLowest,
               child: ListTile(
                 title: Text(
                   p.nameAr,
@@ -349,7 +348,7 @@ class PrayerTimesScreen extends ConsumerWidget {
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
                     color:
-                        isNext ? AppColors.mutedGold : AppColors.textPrimary,
+                        isNext ? AppColors.mutedGold : Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
               ),

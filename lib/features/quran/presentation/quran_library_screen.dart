@@ -15,7 +15,6 @@ class QuranLibraryScreen extends ConsumerWidget {
     final repo = ref.watch(quranRepositoryProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.warmIvory,
       appBar: AppBar(
         title: const Text('القرآن الكريم'),
         actions: [
@@ -123,7 +122,7 @@ class _NavChip extends StatelessWidget {
         avatar: Icon(icon, size: 18, color: AppColors.deepEmerald),
         label: Text(label),
         onPressed: onTap,
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).colorScheme.surfaceContainerLowest,
         side: const BorderSide(color: AppColors.borderLight),
       ),
     );

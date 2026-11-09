@@ -110,7 +110,6 @@ class _AdhkarScreenState extends ConsumerState<AdhkarScreen> {
     final progress = ref.watch(adhkarProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.warmIvory,
       appBar: AppBar(title: const Text('الأذكار')),
       body: async.when(
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -150,7 +149,7 @@ class _AdhkarScreenState extends ConsumerState<AdhkarScreen> {
                     hintText: 'ابحث في الأذكار والأدعية',
                     prefixIcon: const Icon(Icons.search),
                     filled: true,
-                    fillColor: Colors.white,
+                    fillColor: Theme.of(context).colorScheme.surfaceContainerLowest,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide.none,
@@ -307,7 +306,6 @@ class AdhkarCategoryScreen extends ConsumerWidget {
         final done = completedIn(category, progress);
 
         return Scaffold(
-          backgroundColor: AppColors.warmIvory,
           appBar: AppBar(
             title: Text(category.title, style: const TextStyle(fontSize: 18)),
             actions: [
@@ -391,10 +389,10 @@ class _AdhkarCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      color: isDone ? AppColors.deepEmerald.withOpacity(0.06) : Colors.white,
+      color: isDone ? AppColors.deepEmerald.withOpacity(0.06) : Theme.of(context).colorScheme.surfaceContainerLowest,
       child: InkWell(
         onTap: isDone ? null : onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(24),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -406,7 +404,7 @@ class _AdhkarCard extends StatelessWidget {
                   fontFamily: 'ScheherazadeNew',
                   fontSize: 21,
                   height: 1.9,
-                  color: isDone ? AppColors.textMuted : AppColors.textPrimary,
+                  color: isDone ? AppColors.textMuted : Theme.of(context).colorScheme.onSurface,
                 ),
                 textAlign: TextAlign.justify,
                 textDirection: TextDirection.rtl,

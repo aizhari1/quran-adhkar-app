@@ -8,7 +8,6 @@ class RecitersScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
-      backgroundColor: AppColors.warmIvory,
       appBar: AppBar(title: const Text('القراء')),
       body: const Center(
         child: Text('مكتبة القرّاء قيد الإعداد، وسيُضاف الصوت من مصادر موثّقة فقط'),

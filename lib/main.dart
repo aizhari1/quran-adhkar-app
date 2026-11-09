@@ -13,9 +13,11 @@ import 'features/widgets/verse_widget_service.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-    statusBarColor: Colors.transparent,
-  ));
+  // Edge-to-edge like modern Android: transparent status + navigation bars.
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+  SystemChrome.setSystemUIOverlayStyle(
+    AppTheme.overlayFor(WidgetsBinding.instance.platformDispatcher.platformBrightness),
+  );
 
   try {
     final widgetService = VerseWidgetService();
@@ -55,6 +57,12 @@ class QuranAdhkarApp extends ConsumerWidget {
       themeMode: settings.themeMode,
       locale: Locale(settings.languageCode),
       routerConfig: router,
+      builder: (context, child) {
+        return AnnotatedRegion<SystemUiOverlayStyle>(
+          value: AppTheme.overlayFor(Theme.of(context).brightness),
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,

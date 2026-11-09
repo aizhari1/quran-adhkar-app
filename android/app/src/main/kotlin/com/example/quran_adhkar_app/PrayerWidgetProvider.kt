@@ -89,7 +89,7 @@ class PrayerWidgetProvider : AppWidgetProvider() {
                 for (i in 0 until 5) {
                     v.setTextViewText(nameIds[i], names[i])
                     v.setTextViewText(timeIds[i], fmt(today[i]))
-                    val highlight = if (i == nextIdx) Color.parseColor("#FFC5A46D") else Color.parseColor("#FFF7F4EC")
+                    val highlight = if (i == nextIdx) Color.parseColor("#FFE3C58B") else Color.parseColor("#FFF3F9F6")
                     v.setTextColor(nameIds[i], highlight)
                     v.setTextColor(timeIds[i], highlight)
                 }

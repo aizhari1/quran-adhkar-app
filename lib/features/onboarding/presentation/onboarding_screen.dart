@@ -10,7 +10,6 @@ class OnboardingScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
-      backgroundColor: AppColors.warmIvory,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -26,10 +25,10 @@ class OnboardingScreen extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: 16),
-              const Text(
+              Text(
                 'رفيقك للقرآن والأذكار ومواقيت الصلاة، بدون إنترنت',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: AppColors.textSecondary),
+                style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
               ),
               const SizedBox(height: 48),
               ElevatedButton(

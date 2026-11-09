@@ -12,7 +12,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="الصلاة القادمة"
-        android:textColor="#FFC5A46D"
+        android:textColor="#FFE3C58B"
         android:textSize="12sp"
         android:textStyle="bold" />
 
@@ -20,7 +20,7 @@
         android:id="@+id/next_name"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textColor="#FFF7F4EC"
+        android:textColor="#FFF3F9F6"
         android:textSize="24sp"
         android:textStyle="bold" />
 
@@ -28,7 +28,7 @@
         android:id="@+id/next_time"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textColor="#FFD4BC8E"
+        android:textColor="#FFF1DDB0"
         android:textSize="16sp" />
 
     <TextView
@@ -38,7 +38,7 @@
         android:ellipsize="end"
         android:maxLines="1"
         android:paddingBottom="6dp"
-        android:textColor="#99F7F4EC"
+        android:textColor="#B3F3F9F6"
         android:textSize="10sp" />
 
     <LinearLayout
@@ -56,13 +56,13 @@
                 android:id="@+id/p0_name"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textColor="#FFF7F4EC"
+                android:textColor="#FFF3F9F6"
                 android:textSize="11sp" />
             <TextView
                 android:id="@+id/p0_time"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textColor="#FFF7F4EC"
+                android:textColor="#FFF3F9F6"
                 android:textSize="11sp"
                 android:textStyle="bold" />
         </LinearLayout>
@@ -76,13 +76,13 @@
                 android:id="@+id/p1_name"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textColor="#FFF7F4EC"
+                android:textColor="#FFF3F9F6"
                 android:textSize="11sp" />
             <TextView
                 android:id="@+id/p1_time"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textColor="#FFF7F4EC"
+                android:textColor="#FFF3F9F6"
                 android:textSize="11sp"
                 android:textStyle="bold" />
         </LinearLayout>
@@ -96,13 +96,13 @@
                 android:id="@+id/p2_name"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textColor="#FFF7F4EC"
+                android:textColor="#FFF3F9F6"
                 android:textSize="11sp" />
             <TextView
                 android:id="@+id/p2_time"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textColor="#FFF7F4EC"
+                android:textColor="#FFF3F9F6"
                 android:textSize="11sp"
                 android:textStyle="bold" />
         </LinearLayout>
@@ -116,13 +116,13 @@
                 android:id="@+id/p3_name"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textColor="#FFF7F4EC"
+                android:textColor="#FFF3F9F6"
                 android:textSize="11sp" />
             <TextView
                 android:id="@+id/p3_time"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textColor="#FFF7F4EC"
+                android:textColor="#FFF3F9F6"
                 android:textSize="11sp"
                 android:textStyle="bold" />
         </LinearLayout>
@@ -136,13 +136,13 @@
                 android:id="@+id/p4_name"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textColor="#FFF7F4EC"
+                android:textColor="#FFF3F9F6"
                 android:textSize="11sp" />
             <TextView
                 android:id="@+id/p4_time"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textColor="#FFF7F4EC"
+                android:textColor="#FFF3F9F6"
                 android:textSize="11sp"
                 android:textStyle="bold" />
         </LinearLayout>

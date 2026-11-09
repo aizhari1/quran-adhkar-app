@@ -7,9 +7,11 @@
     <uses-permission android:name="android.permission.VIBRATE"/>
 
     <application
-        android:label="Quran &amp; Adhkar"
+        android:label="القرآن والأذكار"
         android:name="${applicationName}"
-        android:icon="@android:drawable/ic_menu_compass">
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher"
+        android:enableOnBackInvokedCallback="true">
         <activity
             android:name=".MainActivity"
             android:exported="true"

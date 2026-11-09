@@ -185,7 +185,6 @@ class SettingsScreen extends ConsumerWidget {
     final n = ref.read(appSettingsProvider.notifier);
 
     return Scaffold(
-      backgroundColor: AppColors.warmIvory,
       appBar: AppBar(title: const Text('الإعدادات')),
       body: ListView(
         children: [

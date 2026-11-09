@@ -12,7 +12,7 @@
         android:id="@+id/widget_title"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textColor="#FFC5A46D"
+        android:textColor="#FFE3C58B"
         android:textSize="12sp"
         android:textStyle="bold" />
 
@@ -26,7 +26,7 @@
         android:maxLines="6"
         android:paddingTop="6dp"
         android:paddingBottom="6dp"
-        android:textColor="#FFF7F4EC"
+        android:textColor="#FFF3F9F6"
         android:textDirection="rtl"
         android:textSize="16sp" />
 
@@ -36,7 +36,7 @@
         android:layout_height="wrap_content"
         android:ellipsize="end"
         android:maxLines="1"
-        android:textColor="#FFD4BC8E"
+        android:textColor="#FFF1DDB0"
         android:textDirection="rtl"
         android:textSize="11sp" />
 </LinearLayout>

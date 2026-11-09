@@ -66,7 +66,6 @@ class _MushafReaderScreenState extends ConsumerState<MushafReaderScreen> {
     final surah = surahForPage(_currentPage);
 
     return Scaffold(
-      backgroundColor: AppColors.warmIvory,
       appBar: AppBar(
         title: Text(
           '${surah.nameArabic} • ص $_currentPage',
@@ -231,7 +230,7 @@ class _MushafPageState extends State<_MushafPage> {
       fontFamily: 'ScheherazadeNew',
       fontSize: widget.fontSize,
       height: 2.0,
-      color: AppColors.textPrimary,
+      color: Theme.of(context).colorScheme.onSurface,
     );
     final children = <Widget>[];
     var spans = <InlineSpan>[];
@@ -335,7 +334,7 @@ class _SurahHeader extends StatelessWidget {
                   fontFamily: 'ScheherazadeNew',
                   fontSize: fontSize,
                   height: 2.0,
-                  color: AppColors.textPrimary,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
             ),

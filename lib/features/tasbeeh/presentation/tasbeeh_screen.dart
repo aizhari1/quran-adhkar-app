@@ -90,7 +90,6 @@ class TasbeehScreen extends ConsumerWidget {
     final progress = state.target > 0 ? (state.count % state.target) / state.target : 0.0;
 
     return Scaffold(
-      backgroundColor: AppColors.warmIvory,
       appBar: AppBar(
         title: const Text('التسبيح'),
         actions: [
@@ -163,7 +162,7 @@ class TasbeehScreen extends ConsumerWidget {
             const SizedBox(height: 8),
             Text(
               RegExp(r'[A-Za-z]').hasMatch(state.name) ? '' : state.name,
-              style: const TextStyle(fontSize: 16, color: AppColors.textSecondary),
+              style: TextStyle(fontSize: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
             ),
             const SizedBox(height: 40),
             GestureDetector(
@@ -173,7 +172,7 @@ class TasbeehScreen extends ConsumerWidget {
                 height: 220,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.surfaceContainerLowest,
                   border: Border.all(color: AppColors.mutedGold.withOpacity(0.5), width: 3),
                   boxShadow: [
                     BoxShadow(
@@ -246,7 +245,7 @@ class _DhikrChip extends StatelessWidget {
         onSelected: (_) => onTap(),
         selectedColor: AppColors.deepEmerald.withOpacity(0.15),
         checkmarkColor: AppColors.deepEmerald,
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).colorScheme.surfaceContainerLowest,
         side: BorderSide(
           color: selected ? AppColors.deepEmerald : AppColors.borderLight,
         ),

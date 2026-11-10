@@ -1,9 +1,11 @@
+import 'package:adhan/adhan.dart' as adhan;
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:flutter_timezone/flutter_timezone.dart';
+import '../../features/prayer_times/data/adhan_voices.dart';
 
 class NotificationService {
   factory NotificationService() => _instance;
@@ -18,6 +20,10 @@ class NotificationService {
 
   /// IDs [dhikrIdBase, dhikrIdBase + 1000) belong to the periodic reminders.
   static const dhikrIdBase = 2000;
+
+  /// IDs [adhanIdBase, adhanIdBase + 1000) belong to the adhan notifications.
+  static const adhanIdBase = 3000;
+  String? _adhanSignature;
   static const _dhikrWindowHours = 48;
   static const _dhikrMessages = <String>[
     'صلِّ على النبي صلى الله عليه وسلم',
@@ -105,6 +111,7 @@ class NotificationService {
     required bool enabled,
     int intervalMinutes = 15,
     bool quietHours = true,
+    bool voice = true,
   }) async {
     await init();
     await cancelDhikrReminders();
@@ -124,7 +131,7 @@ class NotificationService {
     ).add(Duration(minutes: interval));
     final end = now.add(const Duration(hours: _dhikrWindowHours));
 
-    const details = NotificationDetails(
+    const silentDetails = NotificationDetails(
       android: AndroidNotificationDetails(
         'dhikr_reminder_channel',
         'تذكير بالذكر',
@@ -137,6 +144,30 @@ class NotificationService {
       iOS: DarwinNotificationDetails(),
     );
 
+    // With voice on, each reminder plays a recorded voice saying the dhikr
+    // (message 0 = صلِّ على النبي, message 1 = اذكر الله). A channel's sound is
+    // fixed once created, so each voice has its own channel.
+    NotificationDetails detailsFor(int message) {
+      if (!voice) return silentDetails;
+      final salawat = message == 0;
+      return NotificationDetails(
+        android: AndroidNotificationDetails(
+          salawat ? 'salawat_voice_channel' : 'tasbeeh_voice_channel',
+          salawat ? 'تذكير بالصوت: الصلاة على النبي' : 'تذكير بالصوت: اذكر الله',
+          channelDescription: 'تذكير دوري بصوت الذكر',
+          importance: Importance.defaultImportance,
+          priority: Priority.defaultPriority,
+          playSound: true,
+          sound: RawResourceAndroidNotificationSound(
+            salawat ? 'salawat_voice' : 'tasbeeh_voice',
+          ),
+          enableVibration: false,
+          timeoutAfter: 600000,
+        ),
+        iOS: const DarwinNotificationDetails(),
+      );
+    }
+
     var id = dhikrIdBase;
     try {
       while (t.isBefore(end) && id < dhikrIdBase + 400) {
@@ -144,12 +175,13 @@ class NotificationService {
         final quiet = quietHours && (t.hour >= 23 || t.hour < 4);
         if (!quiet) {
           final slot = t.millisecondsSinceEpoch ~/ (interval * 60000);
+          final message = slot % _dhikrMessages.length;
           await _plugin.zonedSchedule(
             id,
             'القرآن والأذكار',
-            _dhikrMessages[slot % _dhikrMessages.length],
+            _dhikrMessages[message],
             t,
-            details,
+            detailsFor(message),
             androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
             uiLocalNotificationDateInterpretation:
                 UILocalNotificationDateInterpretation.absoluteTime,
@@ -160,6 +192,129 @@ class NotificationService {
       }
     } catch (e) {
       debugPrint('scheduleDhikrReminders failed: $e');
+    }
+  }
+
+  /// Lets the app ask Android 12+ for permission to fire alarms exactly on
+  /// time (adhan must not be late). Opens the system "Alarms & reminders" page.
+  Future<void> requestExactAlarmPermission() async {
+    try {
+      await init();
+      await _plugin
+          .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>()
+          ?.requestExactAlarmsPermission();
+    } catch (e) {
+      debugPrint('exact alarm permission request failed: $e');
+    }
+  }
+
+  /// Schedules the adhan for the next 3 days. Each voice has its own channel
+  /// (a channel's sound can't change once created) and plays through the alarm
+  /// stream so the full adhan is heard. Safe to call repeatedly.
+  Future<void> scheduleAdhans({
+    required bool enabled,
+    required adhan.Coordinates coordinates,
+    required adhan.CalculationMethod method,
+    required adhan.Madhab madhab,
+    required String city,
+    required AdhanVoice voice,
+    required AdhanVoice fajrVoice,
+  }) async {
+    final now = DateTime.now();
+    final signature = '$enabled|${coordinates.latitude}|${coordinates.longitude}'
+        '|${method.name}|${madhab.name}|${voice.id}|${fajrVoice.id}|$city'
+        '|${now.year}-${now.month}-${now.day}';
+    if (signature == _adhanSignature) return;
+    _adhanSignature = signature;
+    try {
+      await init();
+      await cancelAdhans();
+      if (!enabled) return;
+
+      final params = method.getParameters();
+      params.madhab = madhab;
+      var id = adhanIdBase;
+      for (var d = 0; d < 3; d++) {
+        final day = now.add(Duration(days: d));
+        final pt = adhan.PrayerTimes(
+          coordinates,
+          adhan.DateComponents.from(day),
+          params,
+        );
+        final prayers = <(String, DateTime, bool)>[
+          ('الفجر', pt.fajr, true),
+          ('الظهر', pt.dhuhr, false),
+          ('العصر', pt.asr, false),
+          ('المغرب', pt.maghrib, false),
+          ('العشاء', pt.isha, false),
+        ];
+        for (final p in prayers) {
+          final when = p.$2.toLocal();
+          if (!when.isAfter(now)) continue;
+          await _scheduleAdhan(id++, p.$1, when, p.$3 ? fajrVoice : voice, city);
+        }
+      }
+    } catch (e) {
+      debugPrint('scheduleAdhans failed: $e');
+      _adhanSignature = null;
+    }
+  }
+
+  Future<void> _scheduleAdhan(
+    int id,
+    String prayerName,
+    DateTime when,
+    AdhanVoice voice,
+    String city,
+  ) async {
+    final details = NotificationDetails(
+      android: AndroidNotificationDetails(
+        'adhan_${voice.id}',
+        'الأذان - ${voice.nameAr}',
+        channelDescription: 'أذان عند دخول وقت الصلاة',
+        importance: Importance.max,
+        priority: Priority.high,
+        playSound: true,
+        sound: RawResourceAndroidNotificationSound(voice.rawName),
+        audioAttributesUsage: AudioAttributesUsage.alarm,
+        category: AndroidNotificationCategory.alarm,
+      ),
+      iOS: const DarwinNotificationDetails(),
+    );
+    final at = tz.TZDateTime.from(when, tz.local);
+
+    Future<void> schedule(AndroidScheduleMode mode) {
+      return _plugin.zonedSchedule(
+        id,
+        'حان الآن موعد صلاة $prayerName',
+        'حيّ على الصلاة • $city',
+        at,
+        details,
+        androidScheduleMode: mode,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+      );
+    }
+
+    try {
+      await schedule(AndroidScheduleMode.exactAllowWhileIdle);
+    } catch (_) {
+      // Exact alarms not permitted: fall back to inexact (may be a bit late).
+      await schedule(AndroidScheduleMode.inexactAllowWhileIdle);
+    }
+  }
+
+  Future<void> cancelAdhans() async {
+    try {
+      final pending = await _plugin.pendingNotificationRequests();
+      for (final p in pending) {
+        if (p.id >= adhanIdBase && p.id < adhanIdBase + 1000) {
+          await _plugin.cancel(p.id);
+        }
+      }
+    } catch (e) {
+      debugPrint('cancelAdhans failed: $e');
     }
   }
 

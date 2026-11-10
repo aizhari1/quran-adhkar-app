@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../prayer_times/data/adhan_voices.dart';
 import '../presentation/settings_screen.dart';
 
 /// Immediate offline persistence via SharedPreferences.
@@ -23,6 +24,10 @@ class SettingsPrefs {
       dhikrReminderEnabled: p.getBool('${_prefix}dhikr') ?? true,
       dhikrIntervalMinutes: p.getInt('${_prefix}dhikr_interval') ?? 15,
       dhikrQuietHours: p.getBool('${_prefix}dhikr_quiet') ?? true,
+      reminderVoice: p.getBool('${_prefix}reminder_voice') ?? true,
+      adhanEnabled: p.getBool('${_prefix}adhan') ?? true,
+      adhanVoiceId: p.getString('${_prefix}adhan_voice') ?? kDefaultAdhanVoiceId,
+      adhanFajrVoiceId: p.getString('${_prefix}adhan_fajr_voice') ?? kDefaultFajrVoiceId,
     );
   }
 
@@ -40,6 +45,10 @@ class SettingsPrefs {
     await p.setBool('${_prefix}dhikr', s.dhikrReminderEnabled);
     await p.setInt('${_prefix}dhikr_interval', s.dhikrIntervalMinutes);
     await p.setBool('${_prefix}dhikr_quiet', s.dhikrQuietHours);
+    await p.setBool('${_prefix}reminder_voice', s.reminderVoice);
+    await p.setBool('${_prefix}adhan', s.adhanEnabled);
+    await p.setString('${_prefix}adhan_voice', s.adhanVoiceId);
+    await p.setString('${_prefix}adhan_fajr_voice', s.adhanFajrVoiceId);
   }
 
   ThemeMode _parseTheme(String v) {

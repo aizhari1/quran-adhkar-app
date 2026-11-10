@@ -27,3 +27,9 @@
 ## Tafsir & Translations
 - Use openly licensed or publisher-permitted packs (e.g. Sahih International, various open tafsirs).
 - Keep original Arabic Quran text immutable across all interface languages.
+
+## Audio assets (added Nov 2026)
+- **Quran recitation**: streamed from the Islamic Network CDN (cdn.islamic.network, Al Quran Cloud). Format `quran/audio/{bitrate}/{edition}/{ayahNumber}.mp3`; editions from the official audio-editions API. Needs internet.
+- **Adhkar audio**: streamed from github.com/rn0x/Adhkar-json (`audio/*.mp3`, via jsDelivr with raw.githubusercontent.com fallback). **No license file in that repository** – confirm permission before public release.
+- **Adhan voices (bundled, offline)**: `android/app/src/main/res/raw/adhan_*.mp3` come from github.com/Kiwifu/adhan-mp3 (a community collection of recordings; **no license stated**; original muezzins/mosques are credited by that repo's file names). Embedded cover art/tags were stripped; audio data is unmodified. **TODO before public release:** confirm redistribution rights, or replace with recordings you have permission for.
+- **Reminder voices (bundled)**: `salawat_voice.mp3` ("اللهم صل وسلم على نبينا محمد") and `tasbeeh_voice.mp3` ("سبحان الله وبحمده") are the first spoken part (cut at the first pause, before the spoken repetition count) of items [1:24] and [1:17] of Adhkar-json's audio (same licensing caveat as above). They were cut by silence analysis, not by listening – **listen to both and replace if the cut is wrong.**

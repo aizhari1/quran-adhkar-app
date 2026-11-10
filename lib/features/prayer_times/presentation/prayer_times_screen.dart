@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:adhan/adhan.dart';
 import 'package:geolocator/geolocator.dart';
 import '../../../core/utils/arabic_format.dart';
+import '../../../core/notifications/notification_service.dart';
 import '../../widgets/home_widget_sync.dart';
+import '../data/adhan_voices.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../settings/presentation/settings_screen.dart';
 
@@ -60,6 +62,8 @@ class PrayerTimesNotifier extends StateNotifier<PrayerTimesState> {
   }
 
   final AppSettingsState _settings;
+  AppSettingsState? _latest;
+  AppSettingsState get _cfg => _latest ?? _settings;
 
   void _applySettings() {
     final method = _mapMethod(_settings.calculationMethod);
@@ -83,7 +87,7 @@ class PrayerTimesNotifier extends StateNotifier<PrayerTimesState> {
     }
   }
 
-  void _calculate() {
+  void _calculate({bool reschedule = true}) {
     final params = state.method.getParameters();
     params.madhab = state.madhab;
     final times = PrayerTimes(
@@ -99,11 +103,24 @@ class PrayerTimesNotifier extends StateNotifier<PrayerTimesState> {
       madhab: state.madhab,
       city: state.cityName,
     );
+    if (reschedule) {
+      // Adhan notifications for the next 3 days (fire and forget; the service
+      // skips the work when nothing relevant changed).
+      NotificationService().scheduleAdhans(
+        enabled: _cfg.notificationsEnabled && _cfg.adhanEnabled,
+        coordinates: state.coordinates,
+        method: state.method,
+        madhab: state.madhab,
+        city: state.cityName,
+        voice: adhanVoiceById(_cfg.adhanVoiceId),
+        fajrVoice: adhanVoiceById(_cfg.adhanFajrVoiceId),
+      );
+    }
   }
 
   void setDate(DateTime date) {
     state = state.copyWith(date: date);
-    _calculate();
+    _calculate(reschedule: false);
   }
 
   void setLocation(double lat, double lng, String city) {
@@ -174,6 +191,7 @@ class PrayerTimesNotifier extends StateNotifier<PrayerTimesState> {
   }
 
   void syncFromSettings(AppSettingsState settings) {
+    _latest = settings;
     final method = _mapMethod(settings.calculationMethod);
     final madhab =
         settings.asrMethod == 'hanafi' ? Madhab.hanafi : Madhab.shafi;

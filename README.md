@@ -1,84 +1,44 @@
-# Quran & Adhkar – Offline-First Islamic Application
+# القرآن والأذكار – Quran & Adhkar
 
-Complete Flutter application featuring:
+تطبيق Flutter عربي (RTL) للقرآن والأذكار ومواقيت الصلاة، يعمل بدون إنترنت في معظم وظائفه. تصميمه بلغة Material 3 Expressive بألوان هادئة (تركواز، نعناعي، رملي).
 
-- Full Mushaf (Uthmani) with multiple Riwayat architecture
-- Tafsir & multi-language translations
-- Daily Khatma tracking
-- Interactive home-screen widgets (Android Glance + iOS WidgetKit)
-- Automatic morning / evening Adhkar with local notifications
-- Digital Tasbeeh
-- Offline prayer times (adhan library)
-- Multiple authentic reciters + downloadable audio
-- Multilingual UI (AR, EN, FR, TR, ID, UR, BN, MS)
-- Optional Supabase cloud backup + Firebase (Analytics, Crashlytics, FCM, Remote Config)
+## المميزات
 
-## Architecture
+- **المصحف**: نص الرواية الحفصية (6236 آية، 604 صفحة، 30 جزءاً)، إشارات مرجعية، آخر قراءة، بحث بالسورة أو بنص الآية.
+- **التلاوة**: 16 قارئاً آية بآية، تظليل الآية الجارية، وانتقال تلقائي للصفحة التالية (يحتاج إنترنت).
+- **الأذكار**: كتاب حصن المسلم كاملاً (132 باباً، 267 ذكراً) مع عدّاد التكرار وتقدّم يومي وبحث وصوت لكل ذكر.
+- **مواقيت الصلاة** بدون إنترنت (مكتبة adhan) مع اختيار الموقع وطريقة الحساب.
+- **الأذان**: 10 أذانات محفوظة داخل التطبيق (7 للصلوات و3 للفجر) تعمل وقت كل صلاة.
+- **تذكير دوري** كل 15/30/60 دقيقة بصوت «صلِّ على النبي» و«اذكر الله» مع إيقاف ليلي اختياري.
+- **ويدجت الشاشة الرئيسية** (Android): آية اليوم، ذكر اليوم، الصلاة القادمة.
+- التسبيح، وخطة الختمة، وإشعارات أذكار الصباح والمساء، والوضع الليلي.
 
-Clean Architecture + feature modules:
+## التقنيات
+
+Flutter 3.24.5 • Riverpod • GoRouter • shared_preferences • flutter_local_notifications • adhan • just_audio. الويدجت مكتوبة بـ Kotlin أصلية بدون مكتبات إضافية.
 
 ```
 lib/
-  app/
-  core/          # theme, database, routing, notifications, audio...
-  features/      # onboarding, home, quran, adhkar, tasbeeh, prayer_times...
-  shared/
+  core/        # theme, routing, notifications, utils
+  features/    # home, quran, adhkar, audio, prayer_times, tasbeeh, settings, widgets, onboarding
+assets/        # quran/ (نص القرآن)، adhkar/ (حصن المسلم)، fonts/
+android/app/src/main/res/raw/   # الأذانات وأصوات التذكير
 ```
 
-State: Riverpod  
-Navigation: GoRouter  
-Local DB: Drift (SQLite)  
-Audio: just_audio + audio_service  
-Prayer: adhan (fully offline)
+## التشغيل
 
-## Design System
+```bash
+flutter pub get
+flutter analyze
+flutter test
+flutter run
+```
 
-Sanctuary Editorial (from Stitch):
+الـ CI (GitHub Actions) بيشغّل التحليل والاختبارات وبيبني APK على كل push وPull Request، وبينشر Release عند عمل tag بصيغة `v*`.
 
-- Primary: Deep Emerald `#0F2C24`
-- Background: Warm Ivory `#F7F4EC`
-- Accent: Muted Gold `#C5A46D`
-- Arabic-first typography with proper RTL support
+## ملاحظات مهمة
 
-## Getting Started (Developer Machine)
-
-1. Install Flutter 3.24+ and Android SDK / Xcode.
-2. `cd quran_adhkar_app`
-3. `flutter pub get`
-4. `dart run build_runner build --delete-conflicting-outputs` (Drift, Freezed, Riverpod)
-5. Place Arabic fonts in `assets/fonts/` (Amiri, Scheherazade New, Noto Naskh Arabic, Inter).
-6. (Optional) Configure Supabase & Firebase via `.env` / `google-services.json` / `GoogleService-Info.plist`.
-7. `flutter run`
-
-## Quran Data
-
-Import process (Phase 2):
-
-- Use verified open datasets (Tanzil.net Uthmani, Quran.com API dumps, or similar with clear license).
-- Never generate or rewrite verses with AI.
-- Each Riwayah must have its own text table / source metadata.
-
-## Native Widgets
-
-- Android: Jetpack Glance (or RemoteViews) – code under `android/` (to be added).
-- iOS: WidgetKit + AppIntents – code under `ios/` (to be added).
-- Shared state via App Groups (iOS) and shared preferences / content provider (Android).
-
-## Offline-First Guarantee
-
-Essential features (Quran reading, Adhkar, Tasbeeh, Khatma progress, prayer times, bookmarks, downloaded audio) work with zero network.
-
-## License & Content
-
-- App code: to be decided by publisher.
-- Quran text & Adhkar: respect original licenses of source datasets.
-- Audio: only use sources that permit redistribution or streaming under clear terms.
-
-## Privacy
-
-- Anonymous local usage by default.
-- Optional account for cloud sync.
-- No unnecessary personal data collection.
-- Privacy policy screen to be added before store release.
-
-See `DEVELOPMENT_STATUS.md` for current implementation progress.
+- مصادر البيانات والصوت وتراخيصها: `docs/CONTENT_SOURCES.md`. **بعضها بدون ترخيص مكتوب، فتأكد منها قبل النشر العام.**
+- نص القرآن والأذكار لا يُولَّد ولا يُعدَّل؛ يُستورد من مصادر موثّقة فقط.
+- APK الإصدار موقّع بمفتاح debug (للتجربة فقط).
+- مثبّت `geolocator_android: 4.6.1` و`audio_session: 0.1.21` (`dependency_overrides`) لأن الإصدارات الأحدث لا تعمل مع Flutter 3.24.

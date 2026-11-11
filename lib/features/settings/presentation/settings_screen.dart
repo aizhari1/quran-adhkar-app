@@ -368,7 +368,7 @@ class SettingsScreen extends ConsumerWidget {
           ),
           const ListTile(
             title: Text('حول التطبيق'),
-            subtitle: Text('Quran & Adhkar v1.0.0'),
+            subtitle: Text('القرآن والأذكار • الإصدار 1.0.0'),
             trailing: Icon(Icons.chevron_right),
           ),
           ListTile(

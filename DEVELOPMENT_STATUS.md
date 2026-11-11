@@ -1,54 +1,28 @@
-# DEVELOPMENT STATUS – Quran & Adhkar App
+# DEVELOPMENT STATUS – القرآن والأذكار
 
-**Last updated:** 2026-11-05  
-**Repository:** https://github.com/aizhari1/quran-adhkar-app
+**Last updated:** 2026-11-11
 
-## Phase 1 – COMPLETED
-- Clean Architecture + feature folders
-- Design system (Deep Emerald / Warm Ivory / Muted Gold) + Light/Dark themes
-- Full Drift SQLite schema (Quran, Adhkar, Khatma, Tasbeeh, Settings, Reciters...)
-- GoRouter + bottom navigation
-- Localization scaffolding (ar + en ARB)
-- README + content integrity docs
+## Done
+- نص القرآن الكامل + مصحف بإشارات مرجعية وآخر قراءة وبحث
+- تلاوة 16 قارئاً (بث) مع تظليل الآية وانتقال تلقائي
+- حصن المسلم كاملاً (132 باباً) مع عدّاد وتقدّم يومي وصوت
+- مواقيت الصلاة + الأذان المحفوظ (10 أصوات) + إشعارات مجدولة
+- تذكير دوري بصوت «صلِّ على النبي / اذكر الله»
+- ثلاث ويدجت للشاشة الرئيسية (آية، ذكر، الصلاة القادمة)
+- واجهة عربية بالكامل بتصميم Material 3 Expressive، وضع ليلي، edge-to-edge، أيقونة متكيّفة
+- شاشة ترحيب أول تشغيل
+- CI: تحليل + اختبارات + APK + Release بالـ tags
 
-## Features completed & pushed to GitHub
+## Known limitations
+- لم يُجرَّب على جهاز حقيقي بعد (الـ CI يبني ويختبر فقط)
+- التلاوة والأذكار الصوتية تحتاج إنترنت، ولا تعمل في الخلفية بعد إغلاق التطبيق
+- الأذان والتذكير بإشعارات مجدولة: قد تتأخر على أجهزة تقتل التطبيقات في الخلفية (Xiaomi/Oppo/Samsung...) ما لم يُستثنَ من توفير البطارية
+- التذكير الدوري يُجدول 48 ساعة قدّام، والأذان 3 أيام، ويتجددان عند فتح التطبيق
+- لا توجد تراجم أو تفسير؛ اللغة الوحيدة عملياً هي العربية
+- ترخيص بعض الملفات الصوتية والنصية غير مؤكد (انظر docs/CONTENT_SOURCES.md)
 
-### Home Dashboard
-- Welcome card with Basmala
-- Quick actions (Mushaf / Adhkar / Tasbeeh) with navigation
-- Next Prayer card
-- Continue Reading card
-- Morning Adhkar reminder card
-
-### Digital Tasbeeh
-- Interactive counter with haptic feedback
-- Subhan Allah, Alhamdulillah, Allahu Akbar, Astaghfirullah
-- Circular progress ring (Muted Gold)
-- Reset with confirmation
-- Fully offline
-
-### Morning & Evening Adhkar
-- Tabbed UI (الصباح / المساء)
-- Real Arabic text + sources (Muslim, Tirmidhi, Bukhari)
-- Per-item repetition counter with progress
-- Completion checkmarks + category progress
-- Reset per category
-- Haptic on each tap
-
-## Next (Phase 2 + 5)
-1. Quran data import (Tanzil Uthmani) + Mushaf reader
-2. Offline Prayer Times with adhan package
-3. Khatma planner
-4. Persist Tasbeeh & Adhkar progress to Drift
-5. Native widgets scaffolding
-
-## How to run
-```bash
-git clone https://github.com/aizhari1/quran-adhkar-app.git
-cd quran-adhkar-app
-flutter pub get
-dart run build_runner build --delete-conflicting-outputs
-flutter run
-```
-
-Place Arabic fonts in `assets/fonts/` before running.
+## Ideas
+- تشغيل الصوت في الخلفية (just_audio_background)
+- تفسير مختصر وترجمات
+- اتجاه القبلة
+- توقيع APK حقيقي (GitHub Secrets) للنشر على Google Play

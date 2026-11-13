@@ -45,6 +45,7 @@ flutter:
   assets:
     - assets/quran/
     - assets/adhkar/
+    - assets/tafsir/
     - assets/images/
 
   fonts:

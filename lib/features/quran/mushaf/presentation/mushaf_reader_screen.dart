@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../audio/audio_controller.dart';
 import '../../../settings/presentation/settings_screen.dart';
+import '../../../tafsir/tafsir_repository.dart';
 import '../../reciters/presentation/reciters_screen.dart';
 import '../../data/quran_repository.dart';
 import '../../data/reading_prefs.dart';
@@ -23,6 +24,7 @@ class _MushafReaderScreenState extends ConsumerState<MushafReaderScreen> {
   late PageController _pageController;
   StreamSubscription<void>? _completedSub;
   bool _autoAdvancing = false;
+  bool _tafsirMode = false;
 
   @override
   void initState() {
@@ -58,6 +60,37 @@ class _MushafReaderScreenState extends ConsumerState<MushafReaderScreen> {
     final ayahs =
         await ref.read(quranRepositoryProvider).getAyahsForPage(_currentPage);
     await ref.read(audioControllerProvider.notifier).playAyahs(ayahs);
+  }
+
+  void _pickTafsirBook() {
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Consumer(
+          builder: (context, ref, _) {
+            final selected = ref.watch(tafsirBookProvider);
+            return ListView(
+              shrinkWrap: true,
+              padding: const EdgeInsets.only(bottom: 16),
+              children: [
+                for (final b in kTafsirBooks)
+                  RadioListTile<String>(
+                    value: b.id,
+                    groupValue: selected,
+                    title: Text(b.name),
+                    subtitle: Text(b.description),
+                    onChanged: (v) {
+                      if (v == null) return;
+                      ref.read(tafsirBookProvider.notifier).select(v);
+                      Navigator.pop(ctx);
+                    },
+                  ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
   }
 
   void _pickReciter() {
@@ -114,6 +147,7 @@ class _MushafReaderScreenState extends ConsumerState<MushafReaderScreen> {
     final fontSize = ref.watch(appSettingsProvider).quranFontSize;
     final isBookmarked = ref.watch(bookmarksProvider).contains(_currentPage);
     final audio = ref.watch(audioControllerProvider);
+    final tafsirBookId = ref.watch(tafsirBookProvider);
     ref.listen<AudioState>(audioControllerProvider, (prev, next) {
       if (next.error != null && next.error != prev?.error) {
         ScaffoldMessenger.of(context)
@@ -129,6 +163,18 @@ class _MushafReaderScreenState extends ConsumerState<MushafReaderScreen> {
           style: const TextStyle(fontFamily: 'NotoNaskhArabic'),
         ),
         actions: [
+          IconButton(
+            icon: Icon(_tafsirMode ? Icons.auto_stories : Icons.auto_stories_outlined),
+            color: _tafsirMode ? AppColors.mutedGold : null,
+            tooltip: _tafsirMode ? 'إخفاء التفسير' : 'عرض التفسير',
+            onPressed: () => setState(() => _tafsirMode = !_tafsirMode),
+          ),
+          if (_tafsirMode)
+            IconButton(
+              icon: const Icon(Icons.library_books_outlined),
+              tooltip: 'اختيار كتاب التفسير',
+              onPressed: _pickTafsirBook,
+            ),
           IconButton(
             icon: const Icon(Icons.record_voice_over_outlined),
             tooltip: 'اختيار القارئ',
@@ -159,7 +205,9 @@ class _MushafReaderScreenState extends ConsumerState<MushafReaderScreen> {
             padding: const EdgeInsets.symmetric(vertical: 8),
             color: AppColors.deepEmerald.withOpacity(0.05),
             child: Text(
-              'صفحة $_currentPage من 604',
+              _tafsirMode
+                  ? 'صفحة $_currentPage من 604 • ${tafsirBookById(tafsirBookId).name}'
+                  : 'صفحة $_currentPage من 604',
               textAlign: TextAlign.center,
               style: const TextStyle(fontSize: 13, color: AppColors.textMuted),
             ),
@@ -177,13 +225,21 @@ class _MushafReaderScreenState extends ConsumerState<MushafReaderScreen> {
                   ref.read(audioControllerProvider.notifier).stop();
                 }
               },
-              itemBuilder: (context, index) => _MushafPage(
-                key: ValueKey('mushaf-page-${index + 1}'),
-                page: index + 1,
-                repo: repo,
-                fontSize: fontSize,
-                highlightKey: audio.quranActive ? audio.currentKey : null,
-              ),
+              itemBuilder: (context, index) => _tafsirMode
+                  ? _TafsirPage(
+                      key: ValueKey('tafsir-page-${index + 1}'),
+                      page: index + 1,
+                      repo: repo,
+                      fontSize: fontSize,
+                      highlightKey: audio.quranActive ? audio.currentKey : null,
+                    )
+                  : _MushafPage(
+                      key: ValueKey('mushaf-page-${index + 1}'),
+                      page: index + 1,
+                      repo: repo,
+                      fontSize: fontSize,
+                      highlightKey: audio.quranActive ? audio.currentKey : null,
+                    ),
             ),
           ),
           SafeArea(
@@ -432,6 +488,188 @@ class _SurahHeader extends StatelessWidget {
               ),
             ),
         ],
+      ),
+    );
+  }
+}
+
+
+/// Reading mode with the tafsir: each ayah followed by its tafsir.
+class _TafsirPage extends ConsumerStatefulWidget {
+  const _TafsirPage({
+    super.key,
+    required this.page,
+    required this.repo,
+    required this.fontSize,
+    this.highlightKey,
+  });
+
+  final int page;
+  final QuranRepository repo;
+  final double fontSize;
+  final String? highlightKey;
+
+  @override
+  ConsumerState<_TafsirPage> createState() => _TafsirPageState();
+}
+
+class _TafsirPageState extends ConsumerState<_TafsirPage> {
+  late Future<_PageData> _data;
+
+  @override
+  void initState() {
+    super.initState();
+    _data = _load();
+  }
+
+  Future<_PageData> _load() async {
+    final ayahs = await widget.repo.getAyahsForPage(widget.page);
+    final basmala = await widget.repo.getBasmala();
+    return _PageData(ayahs, basmala);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bookId = ref.watch(tafsirBookProvider);
+    final tafsir = ref.watch(tafsirIndexProvider(bookId));
+    return FutureBuilder<_PageData>(
+      future: _data,
+      builder: (context, snapshot) {
+        if (snapshot.hasError || tafsir.hasError) {
+          return Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('تعذر تحميل التفسير'),
+                const SizedBox(height: 12),
+                OutlinedButton(
+                  onPressed: () {
+                    ref.invalidate(tafsirIndexProvider(bookId));
+                    setState(() => _data = _load());
+                  },
+                  child: const Text('إعادة المحاولة'),
+                ),
+              ],
+            ),
+          );
+        }
+        final index = tafsir.valueOrNull;
+        if (!snapshot.hasData || index == null) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        return _buildList(snapshot.data!, index);
+      },
+    );
+  }
+
+  Widget _buildList(_PageData data, TafsirIndex index) {
+    final cs = Theme.of(context).colorScheme;
+    final tafsirSize = widget.fontSize * 0.72 < 15 ? 15.0 : widget.fontSize * 0.72;
+    final children = <Widget>[];
+
+    for (final ayah in data.ayahs) {
+      if (ayah.ayahNumber == 1) {
+        final showBasmala = ayah.surahNumber != 1 && ayah.surahNumber != 9;
+        children.add(_SurahHeader(
+          surah: surahByNumber(ayah.surahNumber),
+          basmala: showBasmala ? data.basmala : null,
+          fontSize: widget.fontSize,
+        ));
+      }
+      final isCurrent =
+          widget.highlightKey == '${ayah.surahNumber}:${ayah.ayahNumber}';
+      final text = index.textFor(ayah.surahNumber, ayah.ayahNumber);
+
+      Widget tafsirBody;
+      if (text == null) {
+        tafsirBody = Text(
+          'لا يتوفر نص تفسير منفصل لهذه الآية في هذا الكتاب.',
+          style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant),
+        );
+      } else if (text.isEmpty) {
+        tafsirBody = Text(
+          'تفسير هذه الآية مذكور مع الآية السابقة.',
+          style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant),
+        );
+      } else {
+        tafsirBody = SelectableText(
+          text,
+          textAlign: TextAlign.justify,
+          textDirection: TextDirection.rtl,
+          style: TextStyle(
+            fontFamily: 'NotoNaskhArabic',
+            fontSize: tafsirSize,
+            height: 1.9,
+            color: cs.onSurface,
+          ),
+        );
+      }
+
+      children.add(Container(
+        margin: const EdgeInsets.symmetric(vertical: 8),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isCurrent
+              ? AppColors.mutedGold.withOpacity(0.18)
+              : cs.surfaceContainerLowest,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: isCurrent ? AppColors.mutedGold : cs.outlineVariant,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text.rich(
+              TextSpan(
+                children: [
+                  TextSpan(text: ayah.textUthmani),
+                  TextSpan(
+                    text: ' \uFD3F${toArabicDigits(ayah.ayahNumber)}\uFD3E',
+                    style: TextStyle(
+                      color: AppColors.mutedGold,
+                      fontSize: widget.fontSize * 0.8,
+                    ),
+                  ),
+                ],
+                style: TextStyle(
+                  fontFamily: 'ScheherazadeNew',
+                  fontSize: widget.fontSize,
+                  height: 2.0,
+                  color: cs.onSurface,
+                ),
+              ),
+              textAlign: TextAlign.justify,
+              textDirection: TextDirection.rtl,
+            ),
+            Divider(height: 24, color: cs.outlineVariant),
+            Row(
+              children: [
+                Icon(Icons.auto_stories_outlined,
+                    size: 16, color: cs.primary),
+                const SizedBox(width: 6),
+                Text(
+                  'التفسير',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: cs.primary,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            tafsirBody,
+          ],
+        ),
+      ));
+    }
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: children,
       ),
     );
   }

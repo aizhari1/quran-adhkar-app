@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/utils/arabic_format.dart';
+import '../../widgets/widget_pin_section.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../adhkar/data/adhkar_repository.dart';
 import '../../adhkar/presentation/adhkar_screen.dart';
@@ -37,6 +38,8 @@ class HomeScreen extends ConsumerWidget {
           const _ContinueReadingCard(),
           const SizedBox(height: 16),
           const _AdhkarReminderCard(),
+          const SizedBox(height: 16),
+          const WidgetPinSection(),
         ],
       ),
     );

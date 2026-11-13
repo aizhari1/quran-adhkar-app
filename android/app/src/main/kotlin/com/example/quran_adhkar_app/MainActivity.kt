@@ -4,6 +4,7 @@ import android.appwidget.AppWidgetManager
 import android.content.ComponentName
 import android.content.Intent
 import android.media.MediaPlayer
+import android.os.Build
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -47,13 +48,29 @@ class MainActivity : FlutterActivity() {
             }
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "quran_adhkar/widgets")
             .setMethodCallHandler { call, result ->
-                if (call.method == "refresh") {
-                    refreshWidgets()
-                    result.success(null)
-                } else {
-                    result.notImplemented()
+                when (call.method) {
+                    "refresh" -> {
+                        refreshWidgets()
+                        result.success(null)
+                    }
+                    "pin" -> result.success(pinWidget(call.arguments as? String ?: ""))
+                    else -> result.notImplemented()
                 }
             }
+    }
+
+    /** Asks the launcher to add a widget to the home screen (Android 8+). */
+    private fun pinWidget(kind: String): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return false
+        val cls = when (kind) {
+            "verse" -> VerseWidgetProvider::class.java
+            "dhikr" -> DhikrWidgetProvider::class.java
+            "prayer" -> PrayerWidgetProvider::class.java
+            else -> return false
+        }
+        val mgr = AppWidgetManager.getInstance(this)
+        if (!mgr.isRequestPinAppWidgetSupported) return false
+        return mgr.requestPinAppWidget(ComponentName(this, cls), null, null)
     }
 
     private fun refreshWidgets() {

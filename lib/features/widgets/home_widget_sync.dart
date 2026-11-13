@@ -45,6 +45,20 @@ class HomeWidgetSync {
     }
   }
 
+  /// Asks the launcher to add a widget to the home screen. [kind] is
+  /// "verse", "dhikr" or "prayer". Returns false when the launcher doesn't
+  /// support pinning (the user then has to add it manually).
+  static Future<bool> requestPin(String kind) async {
+    try {
+      return await _channel.invokeMethod<bool>('pin', kind) ?? false;
+    } on MissingPluginException {
+      return false;
+    } catch (e) {
+      debugPrint('widget pin failed: $e');
+      return false;
+    }
+  }
+
   /// Asks the native side to redraw all widgets (no-op off Android / in tests).
   static Future<void> refresh() async {
     try {

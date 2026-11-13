@@ -4,6 +4,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/notifications/notification_service.dart';
 import '../../prayer_times/data/adhan_voices.dart';
 import '../data/settings_prefs.dart';
+import '../../widgets/widget_pin_section.dart';
 import 'adhan_voice_sheet.dart';
 
 class AppSettingsState {
@@ -266,6 +267,10 @@ class SettingsScreen extends ConsumerWidget {
           ),
           const Divider(),
           _SectionHeader('الإشعارات والأذكار'),
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 8, 16, 8),
+            child: WidgetPinSection(),
+          ),
           SwitchListTile(
             title: const Text('تفعيل الإشعارات'),
             value: s.notificationsEnabled,

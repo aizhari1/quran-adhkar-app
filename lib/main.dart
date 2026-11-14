@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,10 +13,20 @@ import 'features/widgets/verse_widget_service.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-    statusBarColor: Colors.transparent,
-  ));
+  // Edge-to-edge like modern Android: transparent status + navigation bars.
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+  SystemChrome.setSystemUIOverlayStyle(
+    AppTheme.overlayFor(WidgetsBinding.instance.platformDispatcher.platformBrightness),
+  );
 
+  // Open immediately: nothing here waits for permission dialogs or plugins.
+  runApp(const ProviderScope(child: QuranAdhkarApp()));
+
+  // Heavier setup runs after the first frame.
+  unawaited(_postLaunchInit());
+}
+
+Future<void> _postLaunchInit() async {
   try {
     final widgetService = VerseWidgetService();
     await widgetService.init();
@@ -23,14 +34,9 @@ void main() async {
   } catch (_) {}
 
   try {
+    // Also asks for the notification permission (Android 13+).
     await NotificationService().init();
   } catch (_) {}
-
-  runApp(
-    const ProviderScope(
-      child: QuranAdhkarApp(),
-    ),
-  );
 }
 
 class QuranAdhkarApp extends ConsumerWidget {
@@ -42,13 +48,19 @@ class QuranAdhkarApp extends ConsumerWidget {
     final settings = ref.watch(appSettingsProvider);
 
     return MaterialApp.router(
-      title: 'Quran & Adhkar',
+      title: 'القرآن والأذكار',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       themeMode: settings.themeMode,
       locale: Locale(settings.languageCode),
       routerConfig: router,
+      builder: (context, child) {
+        return AnnotatedRegion<SystemUiOverlayStyle>(
+          value: AppTheme.overlayFor(Theme.of(context).brightness),
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,

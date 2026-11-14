@@ -3,6 +3,7 @@ name: Flutter CI
 on:
   push:
     branches: [main, master]
+    tags: ["v*"]
   pull_request:
     branches: [main, master]
   workflow_dispatch:
@@ -11,21 +12,48 @@ concurrency:
   group: flutter-ci-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  FLUTTER_VERSION: "3.24.5"
+
 jobs:
+  # Static analysis + tests. Runs in parallel with the APK build so you always
+  # get an APK to try, even when a check fails.
+  check:
+    name: Analyze & Test
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Pub get
+        run: flutter pub get
+
+      # Fails on errors only; infos/warnings are reported but don't block.
+      - name: Analyze
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+
+      - name: Test
+        run: flutter test --reporter expanded
+
   build-apk:
     name: Build APK
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: "17"
 
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.24.5"
+          flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
           cache: true
 
@@ -45,6 +73,20 @@ jobs:
           path: build/app/outputs/flutter-apk/app-release.apk
           retention-days: 14
 
+      - name: Show error details
+        if: failure()
+        run: |
+          {
+            echo '## Build failure details'
+            echo '```'
+            grep -nE "What went wrong|Execution failed|error:|Could not|incompatible|Unsupported|FAILURE|Caused by" -A6 build.log | head -100 || true
+            echo '--- last 40 lines ---'
+            tail -40 build.log
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          msg=$( { grep -E "What went wrong|Execution failed|error:|Could not|incompatible|Unsupported|Caused by" -A5 build.log | head -40; echo '--- tail ---'; tail -25 build.log; } | sed 's/%/%25/g' | awk '{printf "%s%%0A", $0}')
+          echo "::error title=Build error details::${msg}"
+
       - name: Upload logs on failure
         if: failure()
         uses: actions/upload-artifact@v4
@@ -54,3 +96,25 @@ jobs:
             pubget.log
             build.log
           if-no-files-found: ignore
+
+  # Publishes the APK to GitHub Releases when you push a tag like v1.0.0.
+  # Only runs if both the checks and the build succeeded.
+  release:
+    name: Publish Release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [check, build-apk]
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: quran-adhkar-apk
+
+      - name: Rename APK
+        run: mv app-release.apk quran-adhkar-${{ github.ref_name }}.apk
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: quran-adhkar-${{ github.ref_name }}.apk
+          generate_release_notes: true

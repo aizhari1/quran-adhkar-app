@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../data/surah_metadata.dart';
 import '../data/quran_repository.dart';
+import '../data/reading_prefs.dart';
+import 'quran_search_delegate.dart';
 
 class QuranLibraryScreen extends ConsumerWidget {
   const QuranLibraryScreen({super.key});
@@ -13,11 +15,20 @@ class QuranLibraryScreen extends ConsumerWidget {
     final repo = ref.watch(quranRepositoryProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.warmIvory,
       appBar: AppBar(
         title: const Text('القرآن الكريم'),
         actions: [
-          IconButton(icon: const Icon(Icons.search), onPressed: () {}),
+          IconButton(
+            icon: const Icon(Icons.search),
+            tooltip: 'بحث',
+            onPressed: () => showSearch<void>(
+              context: context,
+              delegate: QuranSearchDelegate(
+                repo: repo,
+                onOpenPage: (page) => context.go('/quran/mushaf?page=$page'),
+              ),
+            ),
+          ),
         ],
       ),
       body: FutureBuilder<List<SurahMeta>>(
@@ -37,13 +48,13 @@ class QuranLibraryScreen extends ConsumerWidget {
                     _NavChip(label: 'المصحف', icon: Icons.menu_book, onTap: () => context.go('/quran/mushaf')),
                     _NavChip(label: 'الختمة', icon: Icons.flag_outlined, onTap: () => context.go('/quran/khatma')),
                     _NavChip(label: 'القراء', icon: Icons.headphones, onTap: () => context.go('/quran/reciters')),
-                    _NavChip(label: 'الإشارات', icon: Icons.bookmark_outline, onTap: () {}),
+                    _NavChip(label: 'الإشارات', icon: Icons.bookmark_outline, onTap: () => _showBookmarks(context, ref)),
                   ],
                 ),
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                child: Text('${surahs.length} Surahs', style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
+                child: Text('${toArabicDigits(surahs.length)} سورة', style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
               ),
               Expanded(
                 child: ListView.builder(
@@ -66,6 +77,37 @@ class QuranLibraryScreen extends ConsumerWidget {
   }
 }
 
+void _showBookmarks(BuildContext context, WidgetRef ref) {
+  final pages = ref.read(bookmarksProvider);
+  showModalBottomSheet<void>(
+    context: context,
+    builder: (ctx) => SafeArea(
+      child: pages.isEmpty
+          ? const Padding(
+              padding: EdgeInsets.all(32),
+              child: Text('لا توجد إشارات مرجعية بعد.\nاضغط على أيقونة الإشارة أثناء القراءة.',
+                  textAlign: TextAlign.center),
+            )
+          : ListView(
+              shrinkWrap: true,
+              children: [
+                for (final page in pages)
+                  ListTile(
+                    leading: const Icon(Icons.bookmark, color: AppColors.mutedGold),
+                    title: Text(surahForPage(page).nameArabic,
+                        textDirection: TextDirection.rtl),
+                    subtitle: Text('صفحة $page'),
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      context.go('/quran/mushaf?page=$page');
+                    },
+                  ),
+              ],
+            ),
+    ),
+  );
+}
+
 class _NavChip extends StatelessWidget {
   const _NavChip({required this.label, required this.icon, required this.onTap});
   final String label;
@@ -80,7 +122,7 @@ class _NavChip extends StatelessWidget {
         avatar: Icon(icon, size: 18, color: AppColors.deepEmerald),
         label: Text(label),
         onPressed: onTap,
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).colorScheme.surfaceContainerLowest,
         side: const BorderSide(color: AppColors.borderLight),
       ),
     );
@@ -114,10 +156,10 @@ class _SurahTile extends StatelessWidget {
           textDirection: TextDirection.rtl,
         ),
         subtitle: Text(
-          '${surah.nameTransliteration} • ${surah.ayahCount} Ayahs • ${surah.revelationType}',
+          '${surah.revelationType == 'Meccan' ? 'مكية' : 'مدنية'} • ${toArabicDigits(surah.ayahCount)} آية',
           style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
         ),
-        trailing: Text('p.${surah.pageStart}', style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
+        trailing: Text('ص ${toArabicDigits(surah.pageStart)}', style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
       ),
     );
   }

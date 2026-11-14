@@ -23,7 +23,7 @@ class TasbeehSnapshot {
       };
 
   factory TasbeehSnapshot.fromJson(Map<String, dynamic> j) => TasbeehSnapshot(
-        name: j['name'] as String? ?? 'Subhan Allah',
+        name: j['name'] as String? ?? 'سبحان الله',
         nameArabic: j['nameArabic'] as String? ?? 'سُبْحَانَ ٱللَّهِ',
         count: j['count'] as int? ?? 0,
         target: j['target'] as int? ?? 33,

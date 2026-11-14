@@ -2,7 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/notifications/notification_service.dart';
+import '../../prayer_times/data/adhan_voices.dart';
 import '../data/settings_prefs.dart';
+import '../../widgets/widget_pin_section.dart';
+import 'adhan_voice_sheet.dart';
+import 'notification_check_section.dart';
 
 class AppSettingsState {
   final String languageCode;
@@ -14,6 +18,13 @@ class AppSettingsState {
   final bool morningAdhkarEnabled;
   final bool eveningAdhkarEnabled;
   final bool widgetAutoProgress;
+  final bool dhikrReminderEnabled;
+  final int dhikrIntervalMinutes;
+  final bool dhikrQuietHours;
+  final bool reminderVoice;
+  final bool adhanEnabled;
+  final String adhanVoiceId;
+  final String adhanFajrVoiceId;
 
   const AppSettingsState({
     this.languageCode = 'ar',
@@ -25,6 +36,13 @@ class AppSettingsState {
     this.morningAdhkarEnabled = true,
     this.eveningAdhkarEnabled = true,
     this.widgetAutoProgress = true,
+    this.dhikrReminderEnabled = true,
+    this.dhikrIntervalMinutes = 15,
+    this.dhikrQuietHours = true,
+    this.reminderVoice = true,
+    this.adhanEnabled = true,
+    this.adhanVoiceId = kDefaultAdhanVoiceId,
+    this.adhanFajrVoiceId = kDefaultFajrVoiceId,
   });
 
   AppSettingsState copyWith({
@@ -37,6 +55,13 @@ class AppSettingsState {
     bool? morningAdhkarEnabled,
     bool? eveningAdhkarEnabled,
     bool? widgetAutoProgress,
+    bool? dhikrReminderEnabled,
+    int? dhikrIntervalMinutes,
+    bool? dhikrQuietHours,
+    bool? reminderVoice,
+    bool? adhanEnabled,
+    String? adhanVoiceId,
+    String? adhanFajrVoiceId,
   }) {
     return AppSettingsState(
       languageCode: languageCode ?? this.languageCode,
@@ -48,6 +73,13 @@ class AppSettingsState {
       morningAdhkarEnabled: morningAdhkarEnabled ?? this.morningAdhkarEnabled,
       eveningAdhkarEnabled: eveningAdhkarEnabled ?? this.eveningAdhkarEnabled,
       widgetAutoProgress: widgetAutoProgress ?? this.widgetAutoProgress,
+      dhikrReminderEnabled: dhikrReminderEnabled ?? this.dhikrReminderEnabled,
+      dhikrIntervalMinutes: dhikrIntervalMinutes ?? this.dhikrIntervalMinutes,
+      dhikrQuietHours: dhikrQuietHours ?? this.dhikrQuietHours,
+      reminderVoice: reminderVoice ?? this.reminderVoice,
+      adhanEnabled: adhanEnabled ?? this.adhanEnabled,
+      adhanVoiceId: adhanVoiceId ?? this.adhanVoiceId,
+      adhanFajrVoiceId: adhanFajrVoiceId ?? this.adhanFajrVoiceId,
     );
   }
 }
@@ -69,14 +101,25 @@ class AppSettingsNotifier extends StateNotifier<AppSettingsState> {
   Future<void> _persist() => _prefs.save(state);
 
   Future<void> _syncNotifications() async {
-    if (!state.notificationsEnabled) {
-      await _notifications.cancelAdhkar();
-      return;
+    try {
+      if (!state.notificationsEnabled) {
+        await _notifications.cancelAdhkar();
+        await _notifications.cancelDhikrReminders();
+        return;
+      }
+      await _notifications.scheduleDailyAdhkar(
+        morningEnabled: state.morningAdhkarEnabled,
+        eveningEnabled: state.eveningAdhkarEnabled,
+      );
+      await _notifications.scheduleDhikrReminders(
+        enabled: state.dhikrReminderEnabled,
+        intervalMinutes: state.dhikrIntervalMinutes,
+        quietHours: state.dhikrQuietHours,
+        voice: state.reminderVoice,
+      );
+    } catch (e) {
+      debugPrint('notification sync failed: $e');
     }
-    await _notifications.scheduleDailyAdhkar(
-      morningEnabled: state.morningAdhkarEnabled,
-      eveningEnabled: state.eveningAdhkarEnabled,
-    );
   }
 
   void setLanguage(String code) {
@@ -122,6 +165,46 @@ class AppSettingsNotifier extends StateNotifier<AppSettingsState> {
     _syncNotifications();
   }
 
+  void setDhikrReminder(bool v) {
+    state = state.copyWith(dhikrReminderEnabled: v);
+    _persist();
+    _syncNotifications();
+  }
+
+  void setDhikrInterval(int minutes) {
+    state = state.copyWith(dhikrIntervalMinutes: minutes);
+    _persist();
+    _syncNotifications();
+  }
+
+  void setReminderVoice(bool v) {
+    state = state.copyWith(reminderVoice: v);
+    _persist();
+    _syncNotifications();
+  }
+
+  void setAdhanEnabled(bool v) {
+    state = state.copyWith(adhanEnabled: v);
+    _persist();
+    if (v) _notifications.requestExactAlarmPermission();
+  }
+
+  void setAdhanVoice(String id) {
+    state = state.copyWith(adhanVoiceId: id);
+    _persist();
+  }
+
+  void setAdhanFajrVoice(String id) {
+    state = state.copyWith(adhanFajrVoiceId: id);
+    _persist();
+  }
+
+  void setDhikrQuietHours(bool v) {
+    state = state.copyWith(dhikrQuietHours: v);
+    _persist();
+    _syncNotifications();
+  }
+
   void setWidgetAutoProgress(bool v) {
     state = state.copyWith(widgetAutoProgress: v);
     _persist();
@@ -145,7 +228,6 @@ class SettingsScreen extends ConsumerWidget {
     final n = ref.read(appSettingsProvider.notifier);
 
     return Scaffold(
-      backgroundColor: AppColors.warmIvory,
       appBar: AppBar(title: const Text('الإعدادات')),
       body: ListView(
         children: [
@@ -186,6 +268,10 @@ class SettingsScreen extends ConsumerWidget {
           ),
           const Divider(),
           _SectionHeader('الإشعارات والأذكار'),
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 8, 16, 8),
+            child: WidgetPinSection(),
+          ),
           SwitchListTile(
             title: const Text('تفعيل الإشعارات'),
             value: s.notificationsEnabled,
@@ -205,6 +291,76 @@ class SettingsScreen extends ConsumerWidget {
             onChanged: s.notificationsEnabled ? n.setEveningAdhkar : null,
           ),
           SwitchListTile(
+            title: const Text('تذكير «صلِّ على النبي» و«اذكر الله»'),
+            subtitle: Text(
+              'إشعار تلقائي ${_dhikrIntervalLabel(s.dhikrIntervalMinutes)}',
+            ),
+            value: s.dhikrReminderEnabled,
+            activeColor: AppColors.deepEmerald,
+            onChanged: s.notificationsEnabled ? n.setDhikrReminder : null,
+          ),
+          _SettingsTile(
+            title: 'تكرار التذكير',
+            subtitle: _dhikrIntervalLabel(s.dhikrIntervalMinutes),
+            onTap: () => _showPicker(
+              context,
+              'تكرار التذكير',
+              const {
+                '15': 'كل ١٥ دقيقة',
+                '30': 'كل ٣٠ دقيقة',
+                '60': 'كل ساعة',
+              },
+              '${s.dhikrIntervalMinutes}',
+              (v) => n.setDhikrInterval(int.tryParse(v) ?? 15),
+            ),
+          ),
+          SwitchListTile(
+            title: const Text('إيقاف التذكير ليلاً'),
+            subtitle: const Text('من ١١ مساءً حتى ٤ فجراً'),
+            value: s.dhikrQuietHours,
+            activeColor: AppColors.deepEmerald,
+            onChanged: (s.notificationsEnabled && s.dhikrReminderEnabled)
+                ? n.setDhikrQuietHours
+                : null,
+          ),
+          SwitchListTile(
+            title: const Text('صوت «صلِّ على النبي» في التذكير'),
+            subtitle: const Text('يُسمع صوت الذكر مع كل تذكير'),
+            value: s.reminderVoice,
+            activeColor: AppColors.deepEmerald,
+            onChanged: (s.notificationsEnabled && s.dhikrReminderEnabled)
+                ? n.setReminderVoice
+                : null,
+          ),
+          SwitchListTile(
+            title: const Text('الأذان عند وقت الصلاة'),
+            subtitle: const Text('أذان بصوت محفوظ داخل التطبيق، بدون إنترنت'),
+            value: s.adhanEnabled,
+            activeColor: AppColors.deepEmerald,
+            onChanged: s.notificationsEnabled ? n.setAdhanEnabled : null,
+          ),
+          _SettingsTile(
+            title: 'صوت الأذان',
+            subtitle: adhanVoiceById(s.adhanVoiceId).nameAr,
+            onTap: () => showAdhanVoiceSheet(
+              context,
+              voices: kAdhanVoices,
+              selectedId: s.adhanVoiceId,
+              onSelected: n.setAdhanVoice,
+            ),
+          ),
+          _SettingsTile(
+            title: 'صوت أذان الفجر',
+            subtitle: adhanVoiceById(s.adhanFajrVoiceId).nameAr,
+            onTap: () => showAdhanVoiceSheet(
+              context,
+              voices: kFajrAdhanVoices,
+              selectedId: s.adhanFajrVoiceId,
+              onSelected: n.setAdhanFajrVoice,
+            ),
+          ),
+          const NotificationCheckSection(),
+          SwitchListTile(
             title: const Text('تقدم تلقائي في الـ Widget'),
             subtitle: const Text('بعد الضغط على «قرأت الآية»'),
             value: s.widgetAutoProgress,
@@ -219,7 +375,7 @@ class SettingsScreen extends ConsumerWidget {
           ),
           const ListTile(
             title: Text('حول التطبيق'),
-            subtitle: Text('Quran & Adhkar v1.0.0'),
+            subtitle: Text('القرآن والأذكار • الإصدار 1.0.0'),
             trailing: Icon(Icons.chevron_right),
           ),
           ListTile(
@@ -355,6 +511,17 @@ class SettingsScreen extends ConsumerWidget {
       'north_america': 'إسنا',
     };
     _showPicker(context, 'طريقة الحساب', options, current, n.setCalculationMethod);
+  }
+
+  String _dhikrIntervalLabel(int minutes) {
+    switch (minutes) {
+      case 30:
+        return 'كل ٣٠ دقيقة';
+      case 60:
+        return 'كل ساعة';
+      default:
+        return 'كل ١٥ دقيقة';
+    }
   }
 
   void _pickAsr(BuildContext context, AppSettingsNotifier n, String current) {

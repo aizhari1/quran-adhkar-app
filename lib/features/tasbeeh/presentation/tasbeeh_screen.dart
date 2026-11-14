@@ -34,7 +34,7 @@ final tasbeehProvider = StateNotifierProvider<TasbeehNotifier, TasbeehState>((re
 class TasbeehNotifier extends StateNotifier<TasbeehState> {
   TasbeehNotifier(this._prefs)
       : super(const TasbeehState(
-          name: 'Subhan Allah',
+          name: 'سبحان الله',
           nameArabic: 'سُبْحَانَ ٱللَّهِ',
         )) {
     _load();
@@ -90,7 +90,6 @@ class TasbeehScreen extends ConsumerWidget {
     final progress = state.target > 0 ? (state.count % state.target) / state.target : 0.0;
 
     return Scaffold(
-      backgroundColor: AppColors.warmIvory,
       appBar: AppBar(
         title: const Text('التسبيح'),
         actions: [
@@ -100,15 +99,15 @@ class TasbeehScreen extends ConsumerWidget {
               showDialog(
                 context: context,
                 builder: (ctx) => AlertDialog(
-                  title: const Text('Reset counter?'),
+                  title: const Text('تصفير العدّاد؟'),
                   actions: [
-                    TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('No')),
+                    TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('لا')),
                     TextButton(
                       onPressed: () {
                         notifier.reset();
                         Navigator.pop(ctx);
                       },
-                      child: const Text('Yes'),
+                      child: const Text('نعم'),
                     ),
                   ],
                 ),
@@ -129,22 +128,22 @@ class TasbeehScreen extends ConsumerWidget {
                   _DhikrChip(
                     label: 'سبحان الله',
                     selected: state.nameArabic.contains('سُبْحَان'),
-                    onTap: () => notifier.setDhikr('Subhan Allah', 'سُبْحَانَ ٱللَّهِ'),
+                    onTap: () => notifier.setDhikr('سبحان الله', 'سُبْحَانَ ٱللَّهِ'),
                   ),
                   _DhikrChip(
                     label: 'الحمد لله',
                     selected: state.nameArabic.contains('ٱلْحَمْد'),
-                    onTap: () => notifier.setDhikr('Alhamdulillah', 'ٱلْحَمْدُ لِلَّهِ'),
+                    onTap: () => notifier.setDhikr('الحمد لله', 'ٱلْحَمْدُ لِلَّهِ'),
                   ),
                   _DhikrChip(
                     label: 'الله أكبر',
                     selected: state.nameArabic.contains('أَكْبَر'),
-                    onTap: () => notifier.setDhikr('Allahu Akbar', 'ٱللَّهُ أَكْبَرُ'),
+                    onTap: () => notifier.setDhikr('الله أكبر', 'ٱللَّهُ أَكْبَرُ'),
                   ),
                   _DhikrChip(
                     label: 'أستغفر الله',
                     selected: state.nameArabic.contains('أَسْتَغْفِر'),
-                    onTap: () => notifier.setDhikr('Astaghfirullah', 'أَسْتَغْفِرُ ٱللَّهَ', target: 100),
+                    onTap: () => notifier.setDhikr('أستغفر الله', 'أَسْتَغْفِرُ ٱللَّهَ', target: 100),
                   ),
                 ],
               ),
@@ -162,8 +161,8 @@ class TasbeehScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              state.name,
-              style: const TextStyle(fontSize: 16, color: AppColors.textSecondary),
+              RegExp(r'[A-Za-z]').hasMatch(state.name) ? '' : state.name,
+              style: TextStyle(fontSize: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
             ),
             const SizedBox(height: 40),
             GestureDetector(
@@ -173,7 +172,7 @@ class TasbeehScreen extends ConsumerWidget {
                 height: 220,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.surfaceContainerLowest,
                   border: Border.all(color: AppColors.mutedGold.withOpacity(0.5), width: 3),
                   boxShadow: [
                     BoxShadow(
@@ -219,7 +218,7 @@ class TasbeehScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 24),
             Text(
-              'Tap the circle to count',
+              'اضغط على الدائرة للعدّ',
               style: TextStyle(color: AppColors.textMuted.withOpacity(0.8), fontSize: 13),
             ),
             const Spacer(flex: 2),
@@ -246,7 +245,7 @@ class _DhikrChip extends StatelessWidget {
         onSelected: (_) => onTap(),
         selectedColor: AppColors.deepEmerald.withOpacity(0.15),
         checkmarkColor: AppColors.deepEmerald,
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).colorScheme.surfaceContainerLowest,
         side: BorderSide(
           color: selected ? AppColors.deepEmerald : AppColors.borderLight,
         ),

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_verse_label">آية اليوم</string>
+    <string name="widget_dhikr_label">ذكر اليوم</string>
+    <string name="widget_prayer_label">مواقيت الصلاة</string>
+    <string name="widget_verse_desc">آية من القرآن الكريم تتغير كل يوم</string>
+    <string name="widget_dhikr_desc">ذكر من حصن المسلم يتغير كل يوم</string>
+    <string name="widget_prayer_desc">الصلاة القادمة ومواقيت اليوم</string>
+</resources>

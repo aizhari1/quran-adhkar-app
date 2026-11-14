@@ -31,6 +31,13 @@ android {
     buildTypes {
         release {
             signingConfig = signingConfigs.debug
+            // Notification sounds/icons are looked up by name at runtime, and
+            // the notifications plugin uses Gson reflection. Shrinking is off
+            // so none of that can be stripped from the release APK; the rules
+            // file is kept in case shrinking is enabled later.
+            minifyEnabled false
+            shrinkResources false
+            proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
         }
     }
 }

@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:adhan/adhan.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:intl/intl.dart';
+import '../../../core/utils/arabic_format.dart';
+import '../../../core/notifications/notification_service.dart';
+import '../../widgets/home_widget_sync.dart';
+import '../data/adhan_voices.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../settings/presentation/settings_screen.dart';
 
@@ -22,7 +25,7 @@ class PrayerTimesState {
     this.madhab = Madhab.shafi,
     required this.date,
     this.times,
-    this.cityName = 'Cairo',
+    this.cityName = 'القاهرة',
     this.isLoadingLocation = false,
     this.locationError,
   }) : coordinates = coordinates ?? Coordinates(30.0444, 31.2357);
@@ -59,6 +62,8 @@ class PrayerTimesNotifier extends StateNotifier<PrayerTimesState> {
   }
 
   final AppSettingsState _settings;
+  AppSettingsState? _latest;
+  AppSettingsState get _cfg => _latest ?? _settings;
 
   void _applySettings() {
     final method = _mapMethod(_settings.calculationMethod);
@@ -82,7 +87,7 @@ class PrayerTimesNotifier extends StateNotifier<PrayerTimesState> {
     }
   }
 
-  void _calculate() {
+  void _calculate({bool reschedule = true}) {
     final params = state.method.getParameters();
     params.madhab = state.madhab;
     final times = PrayerTimes(
@@ -91,11 +96,31 @@ class PrayerTimesNotifier extends StateNotifier<PrayerTimesState> {
       params,
     );
     state = state.copyWith(times: times);
+    // Keep the home-screen prayer widget in sync (fire and forget).
+    HomeWidgetSync.pushPrayerTimes(
+      coordinates: state.coordinates,
+      method: state.method,
+      madhab: state.madhab,
+      city: state.cityName,
+    );
+    if (reschedule) {
+      // Adhan notifications for the next 3 days (fire and forget; the service
+      // skips the work when nothing relevant changed).
+      NotificationService().scheduleAdhans(
+        enabled: _cfg.notificationsEnabled && _cfg.adhanEnabled,
+        coordinates: state.coordinates,
+        method: state.method,
+        madhab: state.madhab,
+        city: state.cityName,
+        voice: adhanVoiceById(_cfg.adhanVoiceId),
+        fajrVoice: adhanVoiceById(_cfg.adhanFajrVoiceId),
+      );
+    }
   }
 
   void setDate(DateTime date) {
     state = state.copyWith(date: date);
-    _calculate();
+    _calculate(reschedule: false);
   }
 
   void setLocation(double lat, double lng, String city) {
@@ -140,7 +165,7 @@ class PrayerTimesNotifier extends StateNotifier<PrayerTimesState> {
       state = state.copyWith(
         coordinates: Coordinates(pos.latitude, pos.longitude),
         cityName:
-            '${pos.latitude.toStringAsFixed(2)}, ${pos.longitude.toStringAsFixed(2)}',
+            'موقعي الحالي (${pos.latitude.toStringAsFixed(2)}, ${pos.longitude.toStringAsFixed(2)})',
         isLoadingLocation: false,
         clearError: true,
       );
@@ -153,7 +178,20 @@ class PrayerTimesNotifier extends StateNotifier<PrayerTimesState> {
     }
   }
 
+  /// Fajr of the following day, used as "next prayer" after Isha.
+  DateTime nextDayFajr() {
+    final params = state.method.getParameters();
+    params.madhab = state.madhab;
+    final tomorrow = state.date.add(const Duration(days: 1));
+    return PrayerTimes(
+      state.coordinates,
+      DateComponents.from(tomorrow),
+      params,
+    ).fajr.toLocal();
+  }
+
   void syncFromSettings(AppSettingsState settings) {
+    _latest = settings;
     final method = _mapMethod(settings.calculationMethod);
     final madhab =
         settings.asrMethod == 'hanafi' ? Madhab.hanafi : Madhab.shafi;
@@ -164,8 +202,9 @@ class PrayerTimesNotifier extends StateNotifier<PrayerTimesState> {
 
 final prayerTimesProvider =
     StateNotifierProvider<PrayerTimesNotifier, PrayerTimesState>((ref) {
-  final settings = ref.watch(appSettingsProvider);
-  final notifier = PrayerTimesNotifier(settings);
+  // read (not watch): watching would recreate the notifier on every settings
+  // change and reset the user's location back to Cairo.
+  final notifier = PrayerTimesNotifier(ref.read(appSettingsProvider));
   ref.listen<AppSettingsState>(appSettingsProvider, (_, next) {
     notifier.syncFromSettings(next);
   });
@@ -189,12 +228,12 @@ class PrayerTimesScreen extends ConsumerWidget {
     }
 
     final prayers = [
-      _PrayerInfo('Fajr', 'الفجر', times.fajr),
-      _PrayerInfo('Sunrise', 'الشروق', times.sunrise),
-      _PrayerInfo('Dhuhr', 'الظهر', times.dhuhr),
-      _PrayerInfo('Asr', 'العصر', times.asr),
-      _PrayerInfo('Maghrib', 'المغرب', times.maghrib),
-      _PrayerInfo('Isha', 'العشاء', times.isha),
+      _PrayerInfo('Fajr', 'الفجر', times.fajr.toLocal()),
+      _PrayerInfo('Sunrise', 'الشروق', times.sunrise.toLocal()),
+      _PrayerInfo('Dhuhr', 'الظهر', times.dhuhr.toLocal()),
+      _PrayerInfo('Asr', 'العصر', times.asr.toLocal()),
+      _PrayerInfo('Maghrib', 'المغرب', times.maghrib.toLocal()),
+      _PrayerInfo('Isha', 'العشاء', times.isha.toLocal()),
     ];
 
     _PrayerInfo? nextPrayer;
@@ -204,11 +243,11 @@ class PrayerTimesScreen extends ConsumerWidget {
         break;
       }
     }
+    // After Isha: next prayer is tomorrow's Fajr.
+    nextPrayer ??= _PrayerInfo('Fajr', 'الفجر', notifier.nextDayFajr());
 
-    final timeFormat = DateFormat.jm();
 
     return Scaffold(
-      backgroundColor: AppColors.warmIvory,
       appBar: AppBar(
         title: const Text('مواقيت الصلاة'),
         actions: [
@@ -257,7 +296,7 @@ class PrayerTimesScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    DateFormat.yMMMEd().format(state.date),
+                    formatDateAr(state.date),
                     style: TextStyle(
                       color: AppColors.warmIvory.withOpacity(0.8),
                       fontSize: 13,
@@ -294,7 +333,7 @@ class PrayerTimesScreen extends ConsumerWidget {
                 leading:
                     const Icon(Icons.access_time, color: AppColors.mutedGold),
                 title: Text('التالي: ${nextPrayer.nameAr}'),
-                subtitle: Text(timeFormat.format(nextPrayer.time)),
+                subtitle: Text(formatTimeAr(nextPrayer.time)),
                 trailing: Text(
                   _countdown(nextPrayer.time, now),
                   style: const TextStyle(
@@ -307,12 +346,12 @@ class PrayerTimesScreen extends ConsumerWidget {
           ],
           const SizedBox(height: 12),
           ...prayers.map((p) {
-            final isNext = nextPrayer?.name == p.name;
+            final isNext = nextPrayer?.name == p.name && nextPrayer?.time == p.time;
             return Card(
               margin: const EdgeInsets.only(bottom: 8),
               color: isNext
                   ? AppColors.deepEmerald.withOpacity(0.08)
-                  : Colors.white,
+                  : Theme.of(context).colorScheme.surfaceContainerLowest,
               child: ListTile(
                 title: Text(
                   p.nameAr,
@@ -321,14 +360,13 @@ class PrayerTimesScreen extends ConsumerWidget {
                     color: AppColors.deepEmerald,
                   ),
                 ),
-                subtitle: Text(p.name),
                 trailing: Text(
-                  timeFormat.format(p.time),
+                  formatTimeAr(p.time),
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
                     color:
-                        isNext ? AppColors.mutedGold : AppColors.textPrimary,
+                        isNext ? AppColors.mutedGold : Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
               ),

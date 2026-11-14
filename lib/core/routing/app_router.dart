@@ -3,7 +3,6 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../features/home/presentation/home_screen.dart';
-import '../../features/onboarding/presentation/onboarding_screen.dart';
 import '../../features/quran/presentation/quran_library_screen.dart';
 import '../../features/quran/mushaf/presentation/mushaf_reader_screen.dart';
 import '../../features/adhkar/presentation/adhkar_screen.dart';
@@ -22,10 +21,6 @@ final goRouterProvider = Provider<GoRouter>((ref) {
     initialLocation: '/home',
     debugLogDiagnostics: true,
     routes: [
-      GoRoute(
-        path: '/onboarding',
-        builder: (context, state) => const OnboardingScreen(),
-      ),
       ShellRoute(
         navigatorKey: _shellNavigatorKey,
         builder: (context, state, child) => MainShell(child: child),
@@ -45,7 +40,8 @@ final goRouterProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: 'mushaf',
                 builder: (context, state) {
-                  final page = int.tryParse(state.uri.queryParameters['page'] ?? '1') ?? 1;
+                  // No ?page= -> the reader resumes from the last page read.
+                  final page = int.tryParse(state.uri.queryParameters['page'] ?? '');
                   return MushafReaderScreen(initialPage: page);
                 },
               ),
@@ -64,6 +60,14 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             pageBuilder: (context, state) => const NoTransitionPage(
               child: AdhkarScreen(),
             ),
+            routes: [
+              GoRoute(
+                path: 'category/:id',
+                builder: (context, state) => AdhkarCategoryScreen(
+                  categoryId: int.tryParse(state.pathParameters['id'] ?? '') ?? 1,
+                ),
+              ),
+            ],
           ),
           GoRoute(
             path: '/tasbeeh',
@@ -136,11 +140,11 @@ class _AppBottomNav extends ConsumerWidget {
         }
       },
       destinations: const [
-        NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: 'Home'),
-        NavigationDestination(icon: Icon(Icons.menu_book_outlined), selectedIcon: Icon(Icons.menu_book), label: 'Quran'),
-        NavigationDestination(icon: Icon(Icons.auto_awesome_outlined), selectedIcon: Icon(Icons.auto_awesome), label: 'Adhkar'),
-        NavigationDestination(icon: Icon(Icons.fingerprint_outlined), selectedIcon: Icon(Icons.fingerprint), label: 'Tasbeeh'),
-        NavigationDestination(icon: Icon(Icons.access_time_outlined), selectedIcon: Icon(Icons.access_time), label: 'Prayer'),
+        NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: 'الرئيسية'),
+        NavigationDestination(icon: Icon(Icons.menu_book_outlined), selectedIcon: Icon(Icons.menu_book), label: 'القرآن'),
+        NavigationDestination(icon: Icon(Icons.auto_awesome_outlined), selectedIcon: Icon(Icons.auto_awesome), label: 'الأذكار'),
+        NavigationDestination(icon: Icon(Icons.fingerprint_outlined), selectedIcon: Icon(Icons.fingerprint), label: 'التسبيح'),
+        NavigationDestination(icon: Icon(Icons.access_time_outlined), selectedIcon: Icon(Icons.access_time), label: 'الصلاة'),
       ],
     );
   }

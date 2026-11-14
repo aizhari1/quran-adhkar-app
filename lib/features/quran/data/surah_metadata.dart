@@ -1,4 +1,5 @@
 /// Public Surah metadata (not Quran verse text).
+/// Source: standard Madani Mushaf (604 pages) — 114 surahs, 6236 ayahs.
 class SurahMeta {
   final int number;
   final String nameArabic;
@@ -49,10 +50,104 @@ const List<SurahMeta> allSurahs = [
   SurahMeta(number: 28, nameArabic: 'القصص', nameEnglish: 'The Stories', nameTransliteration: 'Al-Qasas', ayahCount: 88, revelationType: 'Meccan', pageStart: 385),
   SurahMeta(number: 29, nameArabic: 'العنكبوت', nameEnglish: 'The Spider', nameTransliteration: 'Al-Ankabut', ayahCount: 69, revelationType: 'Meccan', pageStart: 396),
   SurahMeta(number: 30, nameArabic: 'الروم', nameEnglish: 'The Romans', nameTransliteration: 'Ar-Rum', ayahCount: 60, revelationType: 'Meccan', pageStart: 404),
+  SurahMeta(number: 31, nameArabic: 'لقمان', nameEnglish: 'Luqman', nameTransliteration: 'Luqman', ayahCount: 34, revelationType: 'Meccan', pageStart: 411),
+  SurahMeta(number: 32, nameArabic: 'السجدة', nameEnglish: 'The Prostration', nameTransliteration: 'As-Sajdah', ayahCount: 30, revelationType: 'Meccan', pageStart: 415),
+  SurahMeta(number: 33, nameArabic: 'الأحزاب', nameEnglish: 'The Combined Forces', nameTransliteration: 'Al-Ahzab', ayahCount: 73, revelationType: 'Medinan', pageStart: 418),
+  SurahMeta(number: 34, nameArabic: 'سبأ', nameEnglish: 'Sheba', nameTransliteration: 'Saba', ayahCount: 54, revelationType: 'Meccan', pageStart: 428),
+  SurahMeta(number: 35, nameArabic: 'فاطر', nameEnglish: 'Originator', nameTransliteration: 'Fatir', ayahCount: 45, revelationType: 'Meccan', pageStart: 434),
   SurahMeta(number: 36, nameArabic: 'يس', nameEnglish: 'Ya-Sin', nameTransliteration: 'Ya-Sin', ayahCount: 83, revelationType: 'Meccan', pageStart: 440),
+  SurahMeta(number: 37, nameArabic: 'الصافات', nameEnglish: 'Those Ranged in Ranks', nameTransliteration: 'As-Saffat', ayahCount: 182, revelationType: 'Meccan', pageStart: 446),
+  SurahMeta(number: 38, nameArabic: 'ص', nameEnglish: 'Sad', nameTransliteration: 'Sad', ayahCount: 88, revelationType: 'Meccan', pageStart: 453),
+  SurahMeta(number: 39, nameArabic: 'الزمر', nameEnglish: 'The Groups', nameTransliteration: 'Az-Zumar', ayahCount: 75, revelationType: 'Meccan', pageStart: 458),
+  SurahMeta(number: 40, nameArabic: 'غافر', nameEnglish: 'The Forgiver', nameTransliteration: 'Ghafir', ayahCount: 85, revelationType: 'Meccan', pageStart: 467),
+  SurahMeta(number: 41, nameArabic: 'فصلت', nameEnglish: 'Explained in Detail', nameTransliteration: 'Fussilat', ayahCount: 54, revelationType: 'Meccan', pageStart: 477),
+  SurahMeta(number: 42, nameArabic: 'الشورى', nameEnglish: 'Consultation', nameTransliteration: 'Ash-Shura', ayahCount: 53, revelationType: 'Meccan', pageStart: 483),
+  SurahMeta(number: 43, nameArabic: 'الزخرف', nameEnglish: 'Ornaments of Gold', nameTransliteration: 'Az-Zukhruf', ayahCount: 89, revelationType: 'Meccan', pageStart: 489),
+  SurahMeta(number: 44, nameArabic: 'الدخان', nameEnglish: 'The Smoke', nameTransliteration: 'Ad-Dukhan', ayahCount: 59, revelationType: 'Meccan', pageStart: 496),
+  SurahMeta(number: 45, nameArabic: 'الجاثية', nameEnglish: 'The Crouching', nameTransliteration: 'Al-Jathiyah', ayahCount: 37, revelationType: 'Meccan', pageStart: 499),
+  SurahMeta(number: 46, nameArabic: 'الأحقاف', nameEnglish: 'The Wind-Curved Sandhills', nameTransliteration: 'Al-Ahqaf', ayahCount: 35, revelationType: 'Meccan', pageStart: 502),
+  SurahMeta(number: 47, nameArabic: 'محمد', nameEnglish: 'Muhammad', nameTransliteration: 'Muhammad', ayahCount: 38, revelationType: 'Medinan', pageStart: 507),
+  SurahMeta(number: 48, nameArabic: 'الفتح', nameEnglish: 'The Victory', nameTransliteration: 'Al-Fath', ayahCount: 29, revelationType: 'Medinan', pageStart: 511),
+  SurahMeta(number: 49, nameArabic: 'الحجرات', nameEnglish: 'The Rooms', nameTransliteration: 'Al-Hujurat', ayahCount: 18, revelationType: 'Medinan', pageStart: 515),
+  SurahMeta(number: 50, nameArabic: 'ق', nameEnglish: 'Qaf', nameTransliteration: 'Qaf', ayahCount: 45, revelationType: 'Meccan', pageStart: 518),
+  SurahMeta(number: 51, nameArabic: 'الذاريات', nameEnglish: 'The Winnowing Winds', nameTransliteration: 'Adh-Dhariyat', ayahCount: 60, revelationType: 'Meccan', pageStart: 520),
+  SurahMeta(number: 52, nameArabic: 'الطور', nameEnglish: 'The Mount', nameTransliteration: 'At-Tur', ayahCount: 49, revelationType: 'Meccan', pageStart: 523),
+  SurahMeta(number: 53, nameArabic: 'النجم', nameEnglish: 'The Star', nameTransliteration: 'An-Najm', ayahCount: 62, revelationType: 'Meccan', pageStart: 526),
+  SurahMeta(number: 54, nameArabic: 'القمر', nameEnglish: 'The Moon', nameTransliteration: 'Al-Qamar', ayahCount: 55, revelationType: 'Meccan', pageStart: 528),
   SurahMeta(number: 55, nameArabic: 'الرحمن', nameEnglish: 'The Beneficent', nameTransliteration: 'Ar-Rahman', ayahCount: 78, revelationType: 'Medinan', pageStart: 531),
+  SurahMeta(number: 56, nameArabic: 'الواقعة', nameEnglish: 'The Inevitable', nameTransliteration: 'Al-Waqiah', ayahCount: 96, revelationType: 'Meccan', pageStart: 534),
+  SurahMeta(number: 57, nameArabic: 'الحديد', nameEnglish: 'The Iron', nameTransliteration: 'Al-Hadid', ayahCount: 29, revelationType: 'Medinan', pageStart: 537),
+  SurahMeta(number: 58, nameArabic: 'المجادلة', nameEnglish: 'The Pleading Woman', nameTransliteration: 'Al-Mujadila', ayahCount: 22, revelationType: 'Medinan', pageStart: 542),
+  SurahMeta(number: 59, nameArabic: 'الحشر', nameEnglish: 'The Exile', nameTransliteration: 'Al-Hashr', ayahCount: 24, revelationType: 'Medinan', pageStart: 545),
+  SurahMeta(number: 60, nameArabic: 'الممتحنة', nameEnglish: 'She That Is Examined', nameTransliteration: 'Al-Mumtahanah', ayahCount: 13, revelationType: 'Medinan', pageStart: 549),
+  SurahMeta(number: 61, nameArabic: 'الصف', nameEnglish: 'The Ranks', nameTransliteration: 'As-Saff', ayahCount: 14, revelationType: 'Medinan', pageStart: 551),
+  SurahMeta(number: 62, nameArabic: 'الجمعة', nameEnglish: 'Friday', nameTransliteration: 'Al-Jumuah', ayahCount: 11, revelationType: 'Medinan', pageStart: 553),
+  SurahMeta(number: 63, nameArabic: 'المنافقون', nameEnglish: 'The Hypocrites', nameTransliteration: 'Al-Munafiqun', ayahCount: 11, revelationType: 'Medinan', pageStart: 554),
+  SurahMeta(number: 64, nameArabic: 'التغابن', nameEnglish: 'Mutual Disillusion', nameTransliteration: 'At-Taghabun', ayahCount: 18, revelationType: 'Medinan', pageStart: 556),
+  SurahMeta(number: 65, nameArabic: 'الطلاق', nameEnglish: 'Divorce', nameTransliteration: 'At-Talaq', ayahCount: 12, revelationType: 'Medinan', pageStart: 558),
+  SurahMeta(number: 66, nameArabic: 'التحريم', nameEnglish: 'The Prohibition', nameTransliteration: 'At-Tahrim', ayahCount: 12, revelationType: 'Medinan', pageStart: 560),
   SurahMeta(number: 67, nameArabic: 'الملك', nameEnglish: 'Sovereignty', nameTransliteration: 'Al-Mulk', ayahCount: 30, revelationType: 'Meccan', pageStart: 562),
+  SurahMeta(number: 68, nameArabic: 'القلم', nameEnglish: 'The Pen', nameTransliteration: 'Al-Qalam', ayahCount: 52, revelationType: 'Meccan', pageStart: 564),
+  SurahMeta(number: 69, nameArabic: 'الحاقة', nameEnglish: 'The Reality', nameTransliteration: 'Al-Haqqah', ayahCount: 52, revelationType: 'Meccan', pageStart: 566),
+  SurahMeta(number: 70, nameArabic: 'المعارج', nameEnglish: 'The Ascending Stairways', nameTransliteration: 'Al-Maarij', ayahCount: 44, revelationType: 'Meccan', pageStart: 568),
+  SurahMeta(number: 71, nameArabic: 'نوح', nameEnglish: 'Noah', nameTransliteration: 'Nuh', ayahCount: 28, revelationType: 'Meccan', pageStart: 570),
+  SurahMeta(number: 72, nameArabic: 'الجن', nameEnglish: 'The Jinn', nameTransliteration: 'Al-Jinn', ayahCount: 28, revelationType: 'Meccan', pageStart: 572),
+  SurahMeta(number: 73, nameArabic: 'المزمل', nameEnglish: 'The Enshrouded One', nameTransliteration: 'Al-Muzzammil', ayahCount: 20, revelationType: 'Meccan', pageStart: 574),
+  SurahMeta(number: 74, nameArabic: 'المدثر', nameEnglish: 'The Cloaked One', nameTransliteration: 'Al-Muddaththir', ayahCount: 56, revelationType: 'Meccan', pageStart: 575),
+  SurahMeta(number: 75, nameArabic: 'القيامة', nameEnglish: 'The Resurrection', nameTransliteration: 'Al-Qiyamah', ayahCount: 40, revelationType: 'Meccan', pageStart: 577),
+  SurahMeta(number: 76, nameArabic: 'الإنسان', nameEnglish: 'Man', nameTransliteration: 'Al-Insan', ayahCount: 31, revelationType: 'Medinan', pageStart: 578),
+  SurahMeta(number: 77, nameArabic: 'المرسلات', nameEnglish: 'The Emissaries', nameTransliteration: 'Al-Mursalat', ayahCount: 50, revelationType: 'Meccan', pageStart: 580),
+  SurahMeta(number: 78, nameArabic: 'النبأ', nameEnglish: 'The Tidings', nameTransliteration: 'An-Naba', ayahCount: 40, revelationType: 'Meccan', pageStart: 582),
+  SurahMeta(number: 79, nameArabic: 'النازعات', nameEnglish: 'Those Who Drag Forth', nameTransliteration: 'An-Naziat', ayahCount: 46, revelationType: 'Meccan', pageStart: 583),
+  SurahMeta(number: 80, nameArabic: 'عبس', nameEnglish: 'He Frowned', nameTransliteration: 'Abasa', ayahCount: 42, revelationType: 'Meccan', pageStart: 585),
+  SurahMeta(number: 81, nameArabic: 'التكوير', nameEnglish: 'The Overthrowing', nameTransliteration: 'At-Takwir', ayahCount: 29, revelationType: 'Meccan', pageStart: 586),
+  SurahMeta(number: 82, nameArabic: 'الانفطار', nameEnglish: 'The Cleaving', nameTransliteration: 'Al-Infitar', ayahCount: 19, revelationType: 'Meccan', pageStart: 587),
+  SurahMeta(number: 83, nameArabic: 'المطففين', nameEnglish: 'The Defrauding', nameTransliteration: 'Al-Mutaffifin', ayahCount: 36, revelationType: 'Meccan', pageStart: 587),
+  SurahMeta(number: 84, nameArabic: 'الانشقاق', nameEnglish: 'The Sundering', nameTransliteration: 'Al-Inshiqaq', ayahCount: 25, revelationType: 'Meccan', pageStart: 589),
+  SurahMeta(number: 85, nameArabic: 'البروج', nameEnglish: 'The Mansions of the Stars', nameTransliteration: 'Al-Buruj', ayahCount: 22, revelationType: 'Meccan', pageStart: 590),
+  SurahMeta(number: 86, nameArabic: 'الطارق', nameEnglish: 'The Nightcomer', nameTransliteration: 'At-Tariq', ayahCount: 17, revelationType: 'Meccan', pageStart: 591),
+  SurahMeta(number: 87, nameArabic: 'الأعلى', nameEnglish: 'The Most High', nameTransliteration: 'Al-Ala', ayahCount: 19, revelationType: 'Meccan', pageStart: 591),
+  SurahMeta(number: 88, nameArabic: 'الغاشية', nameEnglish: 'The Overwhelming', nameTransliteration: 'Al-Ghashiyah', ayahCount: 26, revelationType: 'Meccan', pageStart: 592),
+  SurahMeta(number: 89, nameArabic: 'الفجر', nameEnglish: 'The Dawn', nameTransliteration: 'Al-Fajr', ayahCount: 30, revelationType: 'Meccan', pageStart: 593),
+  SurahMeta(number: 90, nameArabic: 'البلد', nameEnglish: 'The City', nameTransliteration: 'Al-Balad', ayahCount: 20, revelationType: 'Meccan', pageStart: 594),
+  SurahMeta(number: 91, nameArabic: 'الشمس', nameEnglish: 'The Sun', nameTransliteration: 'Ash-Shams', ayahCount: 15, revelationType: 'Meccan', pageStart: 595),
+  SurahMeta(number: 92, nameArabic: 'الليل', nameEnglish: 'The Night', nameTransliteration: 'Al-Layl', ayahCount: 21, revelationType: 'Meccan', pageStart: 595),
+  SurahMeta(number: 93, nameArabic: 'الضحى', nameEnglish: 'The Morning Hours', nameTransliteration: 'Ad-Duha', ayahCount: 11, revelationType: 'Meccan', pageStart: 596),
+  SurahMeta(number: 94, nameArabic: 'الشرح', nameEnglish: 'Relief', nameTransliteration: 'Ash-Sharh', ayahCount: 8, revelationType: 'Meccan', pageStart: 596),
+  SurahMeta(number: 95, nameArabic: 'التين', nameEnglish: 'The Fig', nameTransliteration: 'At-Tin', ayahCount: 8, revelationType: 'Meccan', pageStart: 597),
+  SurahMeta(number: 96, nameArabic: 'العلق', nameEnglish: 'The Clot', nameTransliteration: 'Al-Alaq', ayahCount: 19, revelationType: 'Meccan', pageStart: 597),
+  SurahMeta(number: 97, nameArabic: 'القدر', nameEnglish: 'The Power', nameTransliteration: 'Al-Qadr', ayahCount: 5, revelationType: 'Meccan', pageStart: 598),
+  SurahMeta(number: 98, nameArabic: 'البينة', nameEnglish: 'The Clear Proof', nameTransliteration: 'Al-Bayyinah', ayahCount: 8, revelationType: 'Medinan', pageStart: 598),
+  SurahMeta(number: 99, nameArabic: 'الزلزلة', nameEnglish: 'The Earthquake', nameTransliteration: 'Az-Zalzalah', ayahCount: 8, revelationType: 'Medinan', pageStart: 599),
+  SurahMeta(number: 100, nameArabic: 'العاديات', nameEnglish: 'The Courser', nameTransliteration: 'Al-Adiyat', ayahCount: 11, revelationType: 'Meccan', pageStart: 599),
+  SurahMeta(number: 101, nameArabic: 'القارعة', nameEnglish: 'The Calamity', nameTransliteration: 'Al-Qariah', ayahCount: 11, revelationType: 'Meccan', pageStart: 600),
+  SurahMeta(number: 102, nameArabic: 'التكاثر', nameEnglish: 'Rivalry in World Increase', nameTransliteration: 'At-Takathur', ayahCount: 8, revelationType: 'Meccan', pageStart: 600),
+  SurahMeta(number: 103, nameArabic: 'العصر', nameEnglish: 'The Declining Day', nameTransliteration: 'Al-Asr', ayahCount: 3, revelationType: 'Meccan', pageStart: 601),
+  SurahMeta(number: 104, nameArabic: 'الهمزة', nameEnglish: 'The Traducer', nameTransliteration: 'Al-Humazah', ayahCount: 9, revelationType: 'Meccan', pageStart: 601),
+  SurahMeta(number: 105, nameArabic: 'الفيل', nameEnglish: 'The Elephant', nameTransliteration: 'Al-Fil', ayahCount: 5, revelationType: 'Meccan', pageStart: 601),
+  SurahMeta(number: 106, nameArabic: 'قريش', nameEnglish: 'Quraysh', nameTransliteration: 'Quraysh', ayahCount: 4, revelationType: 'Meccan', pageStart: 602),
+  SurahMeta(number: 107, nameArabic: 'الماعون', nameEnglish: 'Small Kindnesses', nameTransliteration: 'Al-Maun', ayahCount: 7, revelationType: 'Meccan', pageStart: 602),
+  SurahMeta(number: 108, nameArabic: 'الكوثر', nameEnglish: 'Abundance', nameTransliteration: 'Al-Kawthar', ayahCount: 3, revelationType: 'Meccan', pageStart: 602),
+  SurahMeta(number: 109, nameArabic: 'الكافرون', nameEnglish: 'The Disbelievers', nameTransliteration: 'Al-Kafirun', ayahCount: 6, revelationType: 'Meccan', pageStart: 603),
+  SurahMeta(number: 110, nameArabic: 'النصر', nameEnglish: 'Divine Support', nameTransliteration: 'An-Nasr', ayahCount: 3, revelationType: 'Medinan', pageStart: 603),
+  SurahMeta(number: 111, nameArabic: 'المسد', nameEnglish: 'The Palm Fiber', nameTransliteration: 'Al-Masad', ayahCount: 5, revelationType: 'Meccan', pageStart: 603),
   SurahMeta(number: 112, nameArabic: 'الإخلاص', nameEnglish: 'Sincerity', nameTransliteration: 'Al-Ikhlas', ayahCount: 4, revelationType: 'Meccan', pageStart: 604),
   SurahMeta(number: 113, nameArabic: 'الفلق', nameEnglish: 'Daybreak', nameTransliteration: 'Al-Falaq', ayahCount: 5, revelationType: 'Meccan', pageStart: 604),
   SurahMeta(number: 114, nameArabic: 'الناس', nameEnglish: 'Mankind', nameTransliteration: 'An-Nas', ayahCount: 6, revelationType: 'Meccan', pageStart: 604),
 ];
+
+/// Surah with [number] (1–114).
+SurahMeta surahByNumber(int number) => allSurahs[number - 1];
+
+/// The last surah that starts on or before [page] (1–604).
+SurahMeta surahForPage(int page) {
+  var result = allSurahs.first;
+  for (final s in allSurahs) {
+    if (s.pageStart <= page) {
+      result = s;
+    } else {
+      break;
+    }
+  }
+  return result;
+}

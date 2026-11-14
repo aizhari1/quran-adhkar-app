@@ -124,7 +124,6 @@ class KhatmaScreen extends ConsumerWidget {
     final notifier = ref.read(khatmaProvider.notifier);
 
     return Scaffold(
-      backgroundColor: AppColors.warmIvory,
       appBar: AppBar(title: const Text('الختمة')),
       body: state.plans.isEmpty
           ? _EmptyState(onCreate: () => _showCreateDialog(context, notifier))

@@ -6,6 +6,7 @@ import '../../prayer_times/data/adhan_voices.dart';
 import '../data/settings_prefs.dart';
 import '../../widgets/widget_pin_section.dart';
 import 'adhan_voice_sheet.dart';
+import 'notification_check_section.dart';
 
 class AppSettingsState {
   final String languageCode;
@@ -358,6 +359,7 @@ class SettingsScreen extends ConsumerWidget {
               onSelected: n.setAdhanFajrVoice,
             ),
           ),
+          const NotificationCheckSection(),
           SwitchListTile(
             title: const Text('تقدم تلقائي في الـ Widget'),
             subtitle: const Text('بعد الضغط على «قرأت الآية»'),

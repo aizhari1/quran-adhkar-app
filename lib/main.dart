@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,7 +7,6 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'core/theme/app_theme.dart';
 import 'core/routing/app_router.dart';
 import 'core/notifications/notification_service.dart';
-import 'features/onboarding/data/onboarding_prefs.dart';
 import 'features/settings/presentation/settings_screen.dart';
 import 'features/widgets/verse_widget_service.dart';
 
@@ -19,6 +19,14 @@ void main() async {
     AppTheme.overlayFor(WidgetsBinding.instance.platformDispatcher.platformBrightness),
   );
 
+  // Open immediately: nothing here waits for permission dialogs or plugins.
+  runApp(const ProviderScope(child: QuranAdhkarApp()));
+
+  // Heavier setup runs after the first frame.
+  unawaited(_postLaunchInit());
+}
+
+Future<void> _postLaunchInit() async {
   try {
     final widgetService = VerseWidgetService();
     await widgetService.init();
@@ -26,19 +34,9 @@ void main() async {
   } catch (_) {}
 
   try {
+    // Also asks for the notification permission (Android 13+).
     await NotificationService().init();
   } catch (_) {}
-
-  final onboardingDone = await OnboardingPrefs.isDone();
-
-  runApp(
-    ProviderScope(
-      overrides: [
-        onboardingDoneProvider.overrideWithValue(onboardingDone),
-      ],
-      child: const QuranAdhkarApp(),
-    ),
-  );
 }
 
 class QuranAdhkarApp extends ConsumerWidget {

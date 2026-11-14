@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/utils/arabic_format.dart';
+import 'package:permission_handler/permission_handler.dart';
+import '../../../core/notifications/notification_service.dart';
 import '../../widgets/widget_pin_section.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../adhkar/data/adhkar_repository.dart';
@@ -10,6 +12,7 @@ import '../../prayer_times/presentation/prayer_times_screen.dart';
 import '../../quran/data/quran_repository.dart';
 import '../../quran/data/reading_prefs.dart';
 import '../../quran/data/surah_metadata.dart';
+import '../../settings/presentation/settings_screen.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -29,6 +32,7 @@ class HomeScreen extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          const _PermissionBanner(),
           const _WelcomeCard(),
           const SizedBox(height: 16),
           const _QuickActions(),
@@ -378,6 +382,90 @@ class _AdhkarReminderCard extends ConsumerWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+
+/// Shown only when something prevents the adhan/reminders from working:
+/// notifications blocked, or exact alarms not allowed (adhan could be late).
+class _PermissionBanner extends ConsumerStatefulWidget {
+  const _PermissionBanner();
+
+  @override
+  ConsumerState<_PermissionBanner> createState() => _PermissionBannerState();
+}
+
+class _PermissionBannerState extends ConsumerState<_PermissionBanner>
+    with WidgetsBindingObserver {
+  late Future<NotificationStatus> _status;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _status = NotificationService().status();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && mounted) {
+      setState(() => _status = NotificationService().status());
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final adhanOn = ref.watch(appSettingsProvider.select((s) => s.adhanEnabled));
+    final cs = Theme.of(context).colorScheme;
+    return FutureBuilder<NotificationStatus>(
+      future: _status,
+      builder: (context, snap) {
+        final st = snap.data;
+        if (st == null) return const SizedBox.shrink();
+
+        String? message;
+        String? action;
+        VoidCallback? onAction;
+        if (!st.notificationsAllowed) {
+          message = 'الإشعارات متوقفة، فلن يعمل الأذان ولا التذكير.';
+          action = 'السماح بالإشعارات';
+          onAction = openAppSettings;
+        } else if (adhanOn && st.exactAlarmsAllowed == false) {
+          message = 'للأذان في موعده بالثانية، اسمح بالمنبّهات الدقيقة.';
+          action = 'السماح';
+          onAction = NotificationService().requestExactAlarmPermission;
+        }
+        if (message == null) return const SizedBox.shrink();
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 16),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: cs.tertiaryContainer,
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.info_outline, color: cs.onTertiaryContainer),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  message,
+                  style: TextStyle(color: cs.onTertiaryContainer, fontSize: 14),
+                ),
+              ),
+              TextButton(onPressed: onAction, child: Text(action!)),
+            ],
+          ),
+        );
+      },
     );
   }
 }

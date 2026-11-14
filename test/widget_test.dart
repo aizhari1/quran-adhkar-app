@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:quran_adhkar_app/core/notifications/notification_service.dart';
 import 'package:quran_adhkar_app/features/quran/data/surah_metadata.dart';
-import 'package:quran_adhkar_app/features/onboarding/data/onboarding_prefs.dart';
 import 'package:quran_adhkar_app/main.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -31,23 +30,20 @@ void main() {
     expect(find.byType(QuranAdhkarApp), findsOneWidget);
   });
 
-  testWidgets('First run shows onboarding, then ابدأ الآن opens home',
+  testWidgets('App opens straight on the home screen (no start button)',
       (tester) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          onboardingDoneProvider.overrideWithValue(false),
           notificationServiceProvider
               .overrideWithValue(_FakeNotificationService()),
         ],
         child: const QuranAdhkarApp(),
       ),
     );
-    await tester.pumpAndSettle();
-    expect(find.text('ابدأ الآن'), findsOneWidget);
-    await tester.tap(find.text('ابدأ الآن'));
     await tester.pump();
     await tester.pump(const Duration(seconds: 1));
+    expect(find.text('السلام عليكم'), findsOneWidget);
     expect(find.text('ابدأ الآن'), findsNothing);
   });
 

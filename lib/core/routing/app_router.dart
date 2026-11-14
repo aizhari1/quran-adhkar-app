@@ -3,8 +3,6 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../features/home/presentation/home_screen.dart';
-import '../../features/onboarding/data/onboarding_prefs.dart';
-import '../../features/onboarding/presentation/onboarding_screen.dart';
 import '../../features/quran/presentation/quran_library_screen.dart';
 import '../../features/quran/mushaf/presentation/mushaf_reader_screen.dart';
 import '../../features/adhkar/presentation/adhkar_screen.dart';
@@ -20,13 +18,9 @@ final _shellNavigatorKey = GlobalKey<NavigatorState>();
 final goRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
-    initialLocation: ref.read(onboardingDoneProvider) ? '/home' : '/onboarding',
+    initialLocation: '/home',
     debugLogDiagnostics: true,
     routes: [
-      GoRoute(
-        path: '/onboarding',
-        builder: (context, state) => const OnboardingScreen(),
-      ),
       ShellRoute(
         navigatorKey: _shellNavigatorKey,
         builder: (context, state, child) => MainShell(child: child),

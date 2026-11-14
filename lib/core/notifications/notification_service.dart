@@ -40,7 +40,9 @@ class NotificationService {
       final name = await FlutterTimezone.getLocalTimezone();
       tz.setLocalLocation(tz.getLocation(name));
     } catch (_) {
-      tz.setLocalLocation(tz.UTC);
+      // Couldn't read the zone name: pick a zone with the device's UTC offset
+      // so prayer times aren't scheduled in UTC.
+      tz.setLocalLocation(_locationFromOffset());
     }
 
     const android = AndroidInitializationSettings('ic_notification');
@@ -68,6 +70,136 @@ class NotificationService {
     }
 
     _initialized = true;
+  }
+
+
+  tz.Location _locationFromOffset() {
+    final offset = DateTime.now().timeZoneOffset;
+    for (final loc in tz.timeZoneDatabase.locations.values) {
+      if (tz.TZDateTime.now(loc).timeZoneOffset == offset) return loc;
+    }
+    return tz.UTC;
+  }
+
+  /// With voice on, each reminder plays a recorded voice saying the dhikr
+  /// (message 0 = صلِّ على النبي, message 1 = اذكر الله). A channel's sound is
+  /// fixed once created, so each voice has its own channel.
+  NotificationDetails _reminderDetails(
+    int message,
+    bool voice,
+    NotificationDetails silent,
+  ) {
+    if (!voice) return silent;
+    final salawat = message == 0;
+    return NotificationDetails(
+      android: AndroidNotificationDetails(
+        salawat ? 'salawat_voice_channel' : 'tasbeeh_voice_channel',
+        salawat ? 'تذكير بالصوت: الصلاة على النبي' : 'تذكير بالصوت: اذكر الله',
+        channelDescription: 'تذكير دوري بصوت الذكر',
+        importance: Importance.defaultImportance,
+        priority: Priority.defaultPriority,
+        playSound: true,
+        sound: RawResourceAndroidNotificationSound(
+          salawat ? 'salawat_voice' : 'tasbeeh_voice',
+        ),
+        enableVibration: false,
+        timeoutAfter: 600000,
+      ),
+      iOS: const DarwinNotificationDetails(),
+    );
+  }
+
+  NotificationDetails _adhanDetails(AdhanVoice voice) {
+    return NotificationDetails(
+      android: AndroidNotificationDetails(
+        'adhan_${voice.id}',
+        'الأذان - ${voice.nameAr}',
+        channelDescription: 'أذان عند دخول وقت الصلاة',
+        importance: Importance.max,
+        priority: Priority.high,
+        playSound: true,
+        sound: RawResourceAndroidNotificationSound(voice.rawName),
+        audioAttributesUsage: AudioAttributesUsage.alarm,
+        category: AndroidNotificationCategory.alarm,
+      ),
+      iOS: const DarwinNotificationDetails(),
+    );
+  }
+
+  // ---------------------------------------------------------------------
+  // Diagnostics & tests (so the user can verify on the device in seconds)
+  // ---------------------------------------------------------------------
+
+  static const _testAdhanId = 990;
+  static const _testReminderId = 991;
+
+  /// Fires an adhan notification right now (plays the chosen voice).
+  Future<bool> showTestAdhan(AdhanVoice voice) async {
+    try {
+      await init();
+      await _plugin.show(
+        _testAdhanId,
+        'تجربة الأذان',
+        'صوت الأذان: ${voice.nameAr}',
+        _adhanDetails(voice),
+      );
+      return true;
+    } catch (e) {
+      debugPrint('showTestAdhan failed: $e');
+      return false;
+    }
+  }
+
+  /// Fires a reminder notification right now with its voice.
+  Future<bool> showTestReminder({required bool salawat}) async {
+    try {
+      await init();
+      await _plugin.show(
+        _testReminderId,
+        'القرآن والأذكار',
+        _dhikrMessages[salawat ? 0 : 1],
+        _reminderDetails(salawat ? 0 : 1, true, const NotificationDetails()),
+      );
+      return true;
+    } catch (e) {
+      debugPrint('showTestReminder failed: $e');
+      return false;
+    }
+  }
+
+  Future<NotificationStatus> status() async {
+    await init();
+    final android = _plugin.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
+    var allowed = true;
+    bool? exact;
+    try {
+      allowed = await android?.areNotificationsEnabled() ?? true;
+    } catch (_) {}
+    try {
+      exact = await android?.canScheduleExactNotifications();
+    } catch (_) {}
+    var adhanCount = 0;
+    var reminderCount = 0;
+    var dailyCount = 0;
+    try {
+      for (final p in await _plugin.pendingNotificationRequests()) {
+        if (p.id >= adhanIdBase && p.id < adhanIdBase + 1000) {
+          adhanCount++;
+        } else if (p.id >= dhikrIdBase && p.id < dhikrIdBase + 1000) {
+          reminderCount++;
+        } else if (p.id == morningId || p.id == eveningId) {
+          dailyCount++;
+        }
+      }
+    } catch (_) {}
+    return NotificationStatus(
+      notificationsAllowed: allowed,
+      exactAlarmsAllowed: exact,
+      adhanScheduled: adhanCount,
+      reminderScheduled: reminderCount,
+      dailyAdhkarScheduled: dailyCount,
+    );
   }
 
   Future<void> scheduleDailyAdhkar({
@@ -144,29 +276,8 @@ class NotificationService {
       iOS: DarwinNotificationDetails(),
     );
 
-    // With voice on, each reminder plays a recorded voice saying the dhikr
-    // (message 0 = صلِّ على النبي, message 1 = اذكر الله). A channel's sound is
-    // fixed once created, so each voice has its own channel.
-    NotificationDetails detailsFor(int message) {
-      if (!voice) return silentDetails;
-      final salawat = message == 0;
-      return NotificationDetails(
-        android: AndroidNotificationDetails(
-          salawat ? 'salawat_voice_channel' : 'tasbeeh_voice_channel',
-          salawat ? 'تذكير بالصوت: الصلاة على النبي' : 'تذكير بالصوت: اذكر الله',
-          channelDescription: 'تذكير دوري بصوت الذكر',
-          importance: Importance.defaultImportance,
-          priority: Priority.defaultPriority,
-          playSound: true,
-          sound: RawResourceAndroidNotificationSound(
-            salawat ? 'salawat_voice' : 'tasbeeh_voice',
-          ),
-          enableVibration: false,
-          timeoutAfter: 600000,
-        ),
-        iOS: const DarwinNotificationDetails(),
-      );
-    }
+    NotificationDetails detailsFor(int message) =>
+        _reminderDetails(message, voice, silentDetails);
 
     var id = dhikrIdBase;
     try {
@@ -268,20 +379,7 @@ class NotificationService {
     AdhanVoice voice,
     String city,
   ) async {
-    final details = NotificationDetails(
-      android: AndroidNotificationDetails(
-        'adhan_${voice.id}',
-        'الأذان - ${voice.nameAr}',
-        channelDescription: 'أذان عند دخول وقت الصلاة',
-        importance: Importance.max,
-        priority: Priority.high,
-        playSound: true,
-        sound: RawResourceAndroidNotificationSound(voice.rawName),
-        audioAttributesUsage: AudioAttributesUsage.alarm,
-        category: AndroidNotificationCategory.alarm,
-      ),
-      iOS: const DarwinNotificationDetails(),
-    );
+    final details = _adhanDetails(voice);
     final at = tz.TZDateTime.from(when, tz.local);
 
     Future<void> schedule(AndroidScheduleMode mode) {
@@ -404,3 +502,22 @@ class NotificationService {
 final notificationServiceProvider = Provider<NotificationService>((ref) {
   return NotificationService();
 });
+
+
+class NotificationStatus {
+  final bool notificationsAllowed;
+
+  /// null when it can't be determined (e.g. not Android).
+  final bool? exactAlarmsAllowed;
+  final int adhanScheduled;
+  final int reminderScheduled;
+  final int dailyAdhkarScheduled;
+
+  const NotificationStatus({
+    required this.notificationsAllowed,
+    required this.exactAlarmsAllowed,
+    required this.adhanScheduled,
+    required this.reminderScheduled,
+    required this.dailyAdhkarScheduled,
+  });
+}
